@@ -3,8 +3,8 @@ import Campaign from "@/models/Campaign";
 import axios from "axios";
 import { NextRequest, NextResponse } from "next/server";
 
-const BULKSMSBD_API_KEY = "6XXiC4dXK1Qb2vs5YCmW";
-const API_URL = "http://bulksmsbd.net/api/smsapi";
+const BULKSMSBD_API_KEY = process.env.BULKSMSBD_API_KEY;
+const API_URL = process.env.BULKSMSBD_API_URL;
 
 const errorMap: Record<string, string> = {
   "202": "SMS submitted successfully",
