@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 // Get individual campaign details
 export async function GET(
   req: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const { id } = await context.params;
 
