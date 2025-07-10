@@ -1,6 +1,6 @@
 "use client";
 
-import { Lock, Send, User } from "lucide-react";
+import { Lock, MailCheck, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -29,16 +29,11 @@ const Page = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-gray-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-md -mt-25">
         {/* Logo Header */}
         <div className="flex flex-col items-center mb-8">
           <div className="flex items-center justify-center bg-yellow-500 rounded-full p-3 shadow-lg mb-3">
-            {/* <img
-              src="/WeTrainEducation Icon.png"
-              alt="icon"
-              className="size-10"
-            /> */}
-            <Send className="h-8 w-8 text-white" />
+            <MailCheck className="h-8 w-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-800">WeSend</h1>
           <p className="text-gray-500 mt-1">Multi-channel messaging platform</p>
