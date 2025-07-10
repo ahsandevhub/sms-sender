@@ -61,7 +61,6 @@ export const metadata: Metadata = {
     images: ["/og-image.jpg"],
     creator: "@WeTrainEDU",
   },
-  themeColor: "#ffcc00",
 };
 
 export default function RootLayout({
