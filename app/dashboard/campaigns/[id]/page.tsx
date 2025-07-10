@@ -121,7 +121,7 @@ export default function CampaignDetails() {
                 <p className="font-medium">
                   <span className="text-gray-700">{r.to}</span>
                   <span
-                    className={`ml-2 px-2 py-1 text-xs rounded-full ${
+                    className={`ml-2 px-2 py-1 text-xs rounded-full break-all ${
                       r.status === "sent"
                         ? "bg-green-100 text-green-800"
                         : "bg-red-100 text-red-800"
@@ -131,7 +131,9 @@ export default function CampaignDetails() {
                   </span>
                 </p>
                 {r.error && (
-                  <p className="mt-1 text-sm text-red-600">{r.error}</p>
+                  <p className="mt-1 text-sm text-red-600 break-all">
+                    {r.error}
+                  </p>
                 )}
               </div>
             ))}
