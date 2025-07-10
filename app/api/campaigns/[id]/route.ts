@@ -1,17 +1,18 @@
 import dbConnect from "@/lib/dbConnect";
 import Campaign from "@/models/Campaign";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
+// Get individual campaign details
 export async function GET(
-  request: Request,
+  req: NextRequest,
   context: { params: { id: string } }
 ) {
-  const { params } = context;
-  const { id } = await params;
+  const { id } = await context.params;
+
+  console.log(`Fetching campaign with ID: ${id}`);
 
   try {
     await dbConnect();
-
     const campaign = await Campaign.findById(id);
 
     if (!campaign) {
