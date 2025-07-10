@@ -5,6 +5,7 @@ import { ClipboardList, Loader2, Send, Smartphone } from "lucide-react";
 import { useState } from "react";
 
 export default function SmsDashboard() {
+  const [provider, setProvider] = useState("twilio"); // default provider
   const [numbers, setNumbers] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
@@ -22,7 +23,10 @@ export default function SmsDashboard() {
       .map((num) => num.trim())
       .filter(Boolean);
 
-    const res = await fetch("/api/send-sms", {
+    const apiRoute =
+      provider === "twilio" ? "/api/sms/twilio" : "/api/sms/bulksmsbd";
+
+    const res = await fetch(apiRoute, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ numbers: numbersArray, message }),
@@ -50,12 +54,32 @@ export default function SmsDashboard() {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Left: Form */}
         <form
           onSubmit={handleSubmit}
-          className="space-y-6 bg-white p-6 rounded-xl shadow border border-gray-200"
+          className="lg:col-span-3 space-y-6 bg-white p-6 rounded-xl shadow border border-gray-200"
         >
+          {/* Provider Dropdown */}
+          <div>
+            <label
+              htmlFor="provider"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Select SMS Provider
+            </label>
+            <select
+              id="provider"
+              value={provider}
+              onChange={(e) => setProvider(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded bg-gray-50 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+            >
+              <option value="twilio">Twilio</option>
+              <option value="bulksmsbd">BulkSMSBD</option>
+            </select>
+          </div>
+
+          {/* Numbers Input */}
           <div>
             <label
               htmlFor="numbers"
@@ -66,14 +90,15 @@ export default function SmsDashboard() {
             <textarea
               id="numbers"
               rows={5}
-              placeholder="+1234567890\n+1987654321"
-              className="w-full p-3 rounded-lg bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
+              placeholder="88017XXXXXXXX"
+              className="w-full p-3 rounded-lg bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-500"
               value={numbers}
               onChange={(e) => setNumbers(e.target.value)}
               required
             />
           </div>
 
+          {/* Message Input */}
           <div>
             <label
               htmlFor="message"
@@ -85,13 +110,14 @@ export default function SmsDashboard() {
               id="message"
               rows={10}
               placeholder="Type your message here..."
-              className="w-full p-3 rounded-lg bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
+              className="w-full p-3 rounded-lg bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-500"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               required
             />
           </div>
 
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={sending}
@@ -121,7 +147,7 @@ export default function SmsDashboard() {
         </form>
 
         {/* Right: Logs */}
-        <div className="bg-white p-6 rounded-xl shadow border border-gray-200 space-y-4 h-fit">
+        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow border border-gray-200 space-y-4 h-fit">
           <div className="flex items-center gap-3">
             <ClipboardList className="w-5 h-5 text-yellow-500" />
             <h3 className="text-lg font-semibold text-gray-800">
