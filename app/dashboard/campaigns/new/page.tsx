@@ -128,9 +128,15 @@ export default function SmsDashboard() {
               className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-yellow-500"
             >
               <option value="">Select country</option>
-              <option value="Bangladesh">Bangladesh</option>
-              <option value="USA">USA</option>
-              <option value="India">India</option>
+              <option value="US">USA</option>
+              <option value="CA">Canada</option>
+              <option value="AR">Argentina</option>
+              <option value="CO">Colombia</option>
+              <option value="SG">Singapore</option>
+              <option value="MX">Mexico</option>
+              <option value="PE">Peru</option>
+              <option value="BD">Bangladesh</option>
+              <option value="IN">India</option>
             </select>
           </div>
 
