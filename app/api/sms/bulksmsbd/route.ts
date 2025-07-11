@@ -34,16 +34,20 @@ export async function POST(req: NextRequest) {
     await dbConnect();
 
     const body = await req.json();
-    const { numbers, message } = body;
+    const { name, country, numbers, message, segments, estimatedCost } = body;
 
+    // Validate required fields
     if (
-      !numbers ||
+      !name ||
+      !country ||
       !Array.isArray(numbers) ||
       numbers.length === 0 ||
-      !message
+      !message ||
+      !segments ||
+      !estimatedCost
     ) {
       return NextResponse.json(
-        { error: "Missing required fields: number and message" },
+        { error: "Missing required campaign fields." },
         { status: 400 }
       );
     }
@@ -57,25 +61,22 @@ export async function POST(req: NextRequest) {
 
       try {
         const response = await axios.get(url);
-
-        const responseCode =
+        const code =
           typeof response.data === "object"
-            ? response.data.status ||
-              response.data.code ||
-              JSON.stringify(response.data)
+            ? response.data?.status || response.data?.code
             : response.data;
 
-        const errorMessage =
-          errorMap[responseCode] || `Unknown error (${responseCode})`;
+        console.log(response);
 
-        if (responseCode === "202") {
+        const errorMessage =
+          response.data.error_message ||
+          errorMap[response.data?.code] ||
+          `Unknown error (${response.data?.code})`;
+
+        if (code === "202") {
           results.push({ to: number, status: "sent" });
         } else {
-          results.push({
-            to: number,
-            status: "failed",
-            error: errorMessage,
-          });
+          results.push({ to: number, status: "failed", error: errorMessage });
         }
       } catch (err: any) {
         results.push({
@@ -90,8 +91,12 @@ export async function POST(req: NextRequest) {
     const failed = results.length - successful;
 
     const campaign = new Campaign({
+      name,
+      country,
       numbers,
       message,
+      segments,
+      estimatedCost,
       results,
       totalSent: numbers.length,
       successful,

@@ -1,4 +1,4 @@
-import dbConnect from "@/lib/dbConnect"; // You'll need to set this up
+import dbConnect from "@/lib/dbConnect";
 import Campaign from "@/models/Campaign";
 import { NextResponse } from "next/server";
 import twilio from "twilio";
@@ -11,41 +11,56 @@ const client = twilio(accountSid, authToken);
 
 export async function POST(req: Request) {
   try {
-    await dbConnect(); // Connect to MongoDB
+    await dbConnect();
 
-    const { numbers, message } = await req.json();
+    const { name, country, numbers, message, segments, estimatedCost } =
+      await req.json();
 
-    if (!numbers || !message) {
+    // Validate required fields
+    if (
+      !name ||
+      !country ||
+      !Array.isArray(numbers) ||
+      numbers.length === 0 ||
+      !message ||
+      !segments ||
+      !estimatedCost
+    ) {
       return NextResponse.json(
-        { error: "Missing numbers or message" },
+        { error: "Missing required campaign fields." },
         { status: 400 }
       );
     }
 
-    const results = [];
+    const results: { to: string; status: string; error?: string }[] = [];
 
-    // Process all SMS sends
     for (const to of numbers) {
       try {
-        const sms = await client.messages.create({
+        await client.messages.create({
           body: message,
           from: fromNumber,
           to,
         });
         results.push({ to, status: "sent" });
       } catch (err: any) {
-        results.push({ to, status: "failed", error: err.message });
+        results.push({
+          to,
+          status: "failed",
+          error: err.message || "Twilio API error",
+        });
       }
     }
 
-    // Calculate statistics
     const successful = results.filter((r) => r.status === "sent").length;
     const failed = results.length - successful;
 
-    // Create campaign record
     const campaign = new Campaign({
+      name,
+      country,
       numbers,
       message,
+      segments,
+      estimatedCost,
       results,
       totalSent: numbers.length,
       successful,
@@ -63,7 +78,7 @@ export async function POST(req: Request) {
     );
   } catch (err: any) {
     return NextResponse.json(
-      { results: [], error: err.message },
+      { results: [], error: err.message || "Server error" },
       { status: 500 }
     );
   }

@@ -5,41 +5,67 @@ import { ClipboardList, Loader2, Send, Smartphone } from "lucide-react";
 import { useState } from "react";
 
 export default function SmsDashboard() {
-  const [provider, setProvider] = useState("twilio"); // default provider
+  const [provider, setProvider] = useState("");
   const [numbers, setNumbers] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [logs, setLogs] = useState<
     { to: string; status: string; error?: string }[]
   >([]);
+  const [name, setName] = useState("");
+  const [country, setCountry] = useState("");
+
+  const messageLength = message.trim().length;
+  const segments = messageLength === 0 ? 0 : Math.ceil(messageLength / 160);
+  const numbersArray = numbers
+    .split("\n")
+    .map((num) => num.trim())
+    .filter(Boolean);
+  const estimatedCost = segments * numbersArray.length;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSending(true);
     setLogs([]);
 
-    const numbersArray = numbers
-      .split("\n")
-      .map((num) => num.trim())
-      .filter(Boolean);
-
     const apiRoute =
-      provider === "twilio" ? "/api/sms/twilio" : "/api/sms/bulksmsbd";
+      provider === "twilio"
+        ? "/api/sms/twilio"
+        : provider === "bulksmsbd"
+        ? "/api/sms/bulksmsbd"
+        : "/api/sms/cheapglobalsms";
 
-    const res = await fetch(apiRoute, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ numbers: numbersArray, message }),
-    });
+    try {
+      const res = await fetch(apiRoute, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          country,
+          numbers: numbersArray,
+          message: message.trim(),
+          segments,
+          estimatedCost,
+        }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok) {
+      if (!res.ok) {
+        setLogs([
+          { to: "N/A", status: "failed", error: data.error || "Unknown error" },
+        ]);
+      } else {
+        setLogs(data.results || []);
+      }
+    } catch (error: any) {
       setLogs([
-        { to: "N/A", status: "failed", error: data.error || "Unknown error" },
+        {
+          to: "N/A",
+          status: "failed",
+          error: error.message || "Network error",
+        },
       ]);
-    } else {
-      setLogs(data.results || []);
     }
 
     setSending(false);
@@ -47,77 +73,102 @@ export default function SmsDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-3">
         <Smartphone className="w-7 h-7 text-yellow-500" />
         <h2 className="text-2xl font-bold text-gray-800">SMS Campaign</h2>
       </div>
 
-      {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Left: Form */}
         <form
           onSubmit={handleSubmit}
           className="lg:col-span-3 space-y-6 bg-white p-6 rounded-xl shadow border border-gray-200"
         >
-          {/* Provider Dropdown */}
+          {/* Provider Select */}
           <div>
-            <label
-              htmlFor="provider"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Select SMS Provider
             </label>
             <select
-              id="provider"
               value={provider}
               onChange={(e) => setProvider(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded bg-gray-50 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              required
+              className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-yellow-500"
             >
+              <option value="" disabled>
+                Select a provider
+              </option>
               <option value="twilio">Twilio</option>
               <option value="bulksmsbd">BulkSMSBD</option>
+              <option value="cheapglobalsms">CheapGlobalSMS</option>
             </select>
           </div>
 
-          {/* Numbers Input */}
+          {/* Name */}
           <div>
-            <label
-              htmlFor="numbers"
-              className="block text-sm font-medium text-gray-700 mb-2"
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Campaign Name
+            </label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+            />
+          </div>
+
+          {/* Country */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Target Country
+            </label>
+            <select
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              required
+              className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-yellow-500"
             >
+              <option value="">Select country</option>
+              <option value="Bangladesh">Bangladesh</option>
+              <option value="USA">USA</option>
+              <option value="India">India</option>
+            </select>
+          </div>
+
+          {/* Numbers */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Recipient Numbers (one per line)
             </label>
             <textarea
-              id="numbers"
               rows={5}
               placeholder="88017XXXXXXXX"
-              className="w-full p-3 rounded-lg bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-500"
               value={numbers}
               onChange={(e) => setNumbers(e.target.value)}
               required
+              className="w-full p-3 rounded-lg bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-500"
             />
           </div>
 
-          {/* Message Input */}
+          {/* Message */}
           <div>
-            <label
-              htmlFor="message"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Message Content
             </label>
             <textarea
-              id="message"
               rows={10}
               placeholder="Type your message here..."
-              className="w-full p-3 rounded-lg bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-500"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               required
+              className="w-full p-3 rounded-lg bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-500"
             />
+            <p className="text-sm text-gray-500 mt-1">
+              Characters: <strong>{messageLength}</strong> | Segments:{" "}
+              <strong>{segments}</strong> | Estimated Cost:{" "}
+              <strong>{estimatedCost}</strong> unit(s)
+            </p>
           </div>
 
-          {/* Submit Button */}
           <button
             type="submit"
             disabled={sending}
@@ -146,7 +197,7 @@ export default function SmsDashboard() {
           </button>
         </form>
 
-        {/* Right: Logs */}
+        {/* Logs */}
         <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow border border-gray-200 space-y-4 h-fit">
           <div className="flex items-center gap-3">
             <ClipboardList className="w-5 h-5 text-yellow-500" />
@@ -173,7 +224,7 @@ export default function SmsDashboard() {
                   <p className="font-medium">
                     <span className="text-gray-700">{log.to}</span>
                     <span
-                      className={`ml-2 px-2 py-1 text-xs rounded-full break-all ${
+                      className={`ml-2 px-2 py-1 text-xs rounded-full ${
                         log.status === "sent"
                           ? "bg-green-100 text-green-800"
                           : "bg-red-100 text-red-800"

@@ -12,12 +12,28 @@ import {
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+// Helper for country flag
+const getFlag = (country: string) => {
+  const flags: Record<string, string> = {
+    Bangladesh: "🇧🇩",
+    USA: "🇺🇸",
+    India: "🇮🇳",
+    Canada: "🇨🇦",
+    Mexico: "🇲🇽",
+  };
+  return flags[country] || "🌐";
+};
+
 interface Campaign {
   _id: string;
+  name: string;
+  country: string;
   message: string;
   totalSent: number;
   successful: number;
   failed: number;
+  segments: number;
+  estimatedCost: number;
   createdAt: string;
 }
 
@@ -71,72 +87,74 @@ export default function CampaignList() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase">
+                    Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase">
+                    Country
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase">
                     Message
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">
-                    <div className="flex items-center gap-1">
-                      <CheckCircle className="w-4 h-4 text-green-500" /> Success
-                    </div>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase">
+                    Cost
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">
-                    <div className="flex items-center gap-1">
-                      <XCircle className="w-4 h-4 text-red-500" /> Failed
-                    </div>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase">
+                    <CheckCircle className="inline w-4 h-4 text-green-500 mr-1" />
+                    Success
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">
-                    <div className="flex items-center gap-1">
-                      <Inbox className="w-4 h-4 text-blue-500" /> Total
-                    </div>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase">
+                    <XCircle className="inline w-4 h-4 text-red-500 mr-1" />
+                    Failed
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-4 h-4 text-gray-500" /> Date
-                    </div>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase">
+                    <Inbox className="inline w-4 h-4 text-blue-500 mr-1" />
+                    Total
                   </th>
-                  <th className="px-6 py-3 relative">
-                    <span className="sr-only">Details</span>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase">
+                    <Clock className="inline w-4 h-4 text-gray-500 mr-1" />
+                    Date
                   </th>
+                  <th className="px-6 py-3" />
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {campaigns.map((campaign) => (
-                  <tr
-                    key={campaign._id}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800 max-w-xs truncate">
+                  <tr key={campaign._id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                      {campaign.name}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-800">
+                      {getFlag(campaign.country)} {campaign.country}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-700 max-w-xs truncate">
                       {campaign.message}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                        {campaign.successful}
-                      </span>
+                    <td className="px-6 py-4 text-sm text-gray-700 font-semibold">
+                      ৳{campaign.estimatedCost?.toFixed(2)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
-                        {campaign.failed}
-                      </span>
+                    <td className="px-6 py-4 text-sm text-green-700 font-semibold">
+                      {campaign.successful}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <td className="px-6 py-4 text-sm text-red-700 font-semibold">
+                      {campaign.failed}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
                       {campaign.totalSent}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {new Date(campaign.createdAt).toLocaleDateString(
-                        "en-US",
-                        {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        }
-                      )}
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {new Date(campaign.createdAt).toLocaleString("en-US", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <Link
                         href={`/dashboard/campaigns/${campaign._id}`}
-                        className="text-yellow-600 hover:text-yellow-800 flex items-center gap-1"
+                        className="text-yellow-600 hover:text-yellow-800 flex items-center gap-1 text-sm"
                       >
                         Details <ChevronRight className="w-4 h-4" />
                       </Link>
@@ -154,25 +172,31 @@ export default function CampaignList() {
                 key={campaign._id}
                 className="p-4 border border-gray-200 rounded-lg bg-white shadow-sm space-y-2"
               >
-                <p className="text-sm font-medium text-gray-700 truncate">
-                  <span className="font-semibold text-gray-900">Message:</span>{" "}
-                  {campaign.message}
+                <p className="text-sm text-gray-800">
+                  📛 <strong>{campaign.name}</strong>
+                </p>
+                <p className="text-sm text-gray-800">
+                  🌍 {getFlag(campaign.country)} {campaign.country}
+                </p>
+                <p className="text-sm text-gray-700 truncate">
+                  ✉️ <strong>Message:</strong> {campaign.message}
+                </p>
+                <p className="text-sm text-yellow-700">
+                  💰 <strong>Cost:</strong> ৳
+                  {campaign.estimatedCost?.toFixed(2)}
                 </p>
                 <p className="text-sm text-green-700">
-                  ✅ Success:{" "}
-                  <span className="font-semibold">{campaign.successful}</span>
+                  ✅ <strong>Success:</strong> {campaign.successful}
                 </p>
                 <p className="text-sm text-red-700">
-                  ❌ Failed:{" "}
-                  <span className="font-semibold">{campaign.failed}</span>
+                  ❌ <strong>Failed:</strong> {campaign.failed}
                 </p>
                 <p className="text-sm text-blue-700">
-                  📦 Total:{" "}
-                  <span className="font-semibold">{campaign.totalSent}</span>
+                  📦 <strong>Total:</strong> {campaign.totalSent}
                 </p>
                 <p className="text-sm text-gray-600">
                   🕒{" "}
-                  {new Date(campaign.createdAt).toLocaleDateString("en-US", {
+                  {new Date(campaign.createdAt).toLocaleString("en-US", {
                     year: "numeric",
                     month: "short",
                     day: "numeric",

@@ -5,14 +5,28 @@ import {
   CheckCircle,
   ChevronLeft,
   Clock,
+  DollarSign,
+  Globe,
   Inbox,
   Mail,
+  MessageCircle,
   Smartphone,
   XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+
+const getFlag = (country: string) => {
+  const flags: Record<string, string> = {
+    Bangladesh: "🇧🇩",
+    USA: "🇺🇸",
+    India: "🇮🇳",
+    Canada: "🇨🇦",
+    Mexico: "🇲🇽",
+  };
+  return flags[country] || "🌐";
+};
 
 export default function CampaignDetails() {
   const { id } = useParams();
@@ -60,9 +74,33 @@ export default function CampaignDetails() {
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Summary Stats */}
       <div className="bg-white p-6 rounded-xl shadow border border-gray-200 space-y-6">
-        {/* Campaign Summary */}
+        {/* Primary Info */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            title="Name"
+            value={campaign.name}
+            icon={<MessageCircle className="text-yellow-500" />}
+          />
+          <StatCard
+            title="Country"
+            value={`${getFlag(campaign.country)} ${campaign.country}`}
+            icon={<Globe className="text-blue-500" />}
+          />
+          <StatCard
+            title="Estimated Cost"
+            value={`৳${campaign.estimatedCost?.toFixed(2)}`}
+            icon={<DollarSign className="text-green-500" />}
+          />
+          <StatCard
+            title="Segments"
+            value={campaign.segments}
+            icon={<MessageCircle className="text-purple-500" />}
+          />
+        </div>
+
+        {/* Delivery Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             title="Total Sent"
@@ -87,7 +125,13 @@ export default function CampaignDetails() {
           />
           <StatCard
             title="Created At"
-            value={new Date(campaign.createdAt).toLocaleDateString()}
+            value={new Date(campaign.createdAt).toLocaleString("en-US", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
             icon={<Clock className="text-blue-500" />}
           />
         </div>
@@ -102,7 +146,7 @@ export default function CampaignDetails() {
           </p>
         </div>
 
-        {/* Delivery Results */}
+        {/* Delivery Logs */}
         <div>
           <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
             <Smartphone className="w-5 h-5 text-yellow-500" />
@@ -144,16 +188,17 @@ export default function CampaignDetails() {
   );
 }
 
-// Reusable StatCard component matching your design system
 function StatCard({ title, value, icon, percentage }: any) {
   return (
     <div className="bg-white p-4 rounded-lg border border-gray-200">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-gray-600">{title}</p>
-          <p className="text-xl font-semibold text-gray-800">{value}</p>
+          <p className="text-xl font-semibold text-gray-800 break-all">
+            {value}
+          </p>
         </div>
-        {percentage ? (
+        {percentage !== undefined ? (
           <div className="relative w-12 h-12">
             <svg className="w-full h-full" viewBox="0 0 36 36">
               <circle
