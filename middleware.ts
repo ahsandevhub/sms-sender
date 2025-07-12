@@ -1,24 +1,22 @@
-import jwt from "jsonwebtoken";
+import { jwtVerify } from "jose"; // ✅ Use jose instead of jsonwebtoken
 import { NextRequest, NextResponse } from "next/server";
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const token = req.cookies.get("token")?.value;
 
-  // If no token, redirect to root login
   if (!token) {
     return NextResponse.redirect(new URL("/", req.url));
   }
 
   try {
-    // Verify token
-    jwt.verify(token, process.env.JWT_SECRET!);
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
+    await jwtVerify(token, secret); // verifies + decodes
     return NextResponse.next();
-  } catch {
-    // Invalid token = redirect to login
+  } catch (error) {
     return NextResponse.redirect(new URL("/", req.url));
   }
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*"], // Protect everything under /dashboard
+  matcher: ["/dashboard/:path*", "/dashboard"], // protect dashboard
 };

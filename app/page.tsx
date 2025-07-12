@@ -23,23 +23,19 @@ const Page = () => {
         body: JSON.stringify({ username, password }),
       });
 
-      const text = await res.text();
-      let data: any = {};
-
-      try {
-        data = JSON.parse(text);
-      } catch {
-        console.error("Non-JSON response:", text);
-      }
+      const data = await res.json();
 
       if (res.ok && data.success) {
-        router.push("/dashboard"); // now this will work
-      } else if (!res.ok) {
+        // ✅ Delay ensures cookie is committed before navigating
+        setTimeout(() => {
+          window.location.href = "/dashboard"; // works better than router.push in this edge case
+        }, 100);
+      } else {
         setError(data.message || "Invalid credentials");
       }
     } catch (err: any) {
-      console.error("Login error:", err);
-      setError(err.message || "Something went wrong. Try again.");
+      console.error(err);
+      setError("Something went wrong. Try again.");
     }
 
     setIsLoading(false);
