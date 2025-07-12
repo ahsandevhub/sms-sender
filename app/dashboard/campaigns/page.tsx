@@ -1,5 +1,6 @@
 "use client";
 
+import { getCountryFlag } from "@/lib/countries";
 import {
   CheckCircle,
   ChevronRight,
@@ -11,18 +12,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-
-// Helper for country flag
-const getFlag = (country: string) => {
-  const flags: Record<string, string> = {
-    Bangladesh: "🇧🇩",
-    USA: "🇺🇸",
-    India: "🇮🇳",
-    Canada: "🇨🇦",
-    Mexico: "🇲🇽",
-  };
-  return flags[country] || "🌐";
-};
 
 interface Campaign {
   _id: string;
@@ -124,8 +113,8 @@ export default function CampaignList() {
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">
                       {campaign.name}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-800">
-                      {getFlag(campaign.country)} {campaign.country}
+                    <td className="emoji px-6 py-4 text-sm text-gray-800">
+                      {getCountryFlag(campaign.country)} {campaign.country}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-700 max-w-xs truncate">
                       {campaign.message}
@@ -149,6 +138,7 @@ export default function CampaignList() {
                         day: "numeric",
                         hour: "2-digit",
                         minute: "2-digit",
+                        second: "2-digit",
                       })}
                     </td>
                     <td className="px-6 py-4 text-right">
@@ -175,8 +165,8 @@ export default function CampaignList() {
                 <p className="text-sm text-gray-800">
                   📛 <strong>{campaign.name}</strong>
                 </p>
-                <p className="text-sm text-gray-800">
-                  🌍 {getFlag(campaign.country)} {campaign.country}
+                <p className="emoji text-sm text-gray-800">
+                  🌍 {getCountryFlag(campaign.country)} {campaign.country}
                 </p>
                 <p className="text-sm text-gray-700 truncate">
                   ✉️ <strong>Message:</strong> {campaign.message}

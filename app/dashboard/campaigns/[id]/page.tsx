@@ -1,5 +1,6 @@
 "use client";
 
+import { getCountryFlag } from "@/lib/countries";
 import { motion } from "framer-motion";
 import {
   CheckCircle,
@@ -16,17 +17,6 @@ import {
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-
-const getFlag = (country: string) => {
-  const flags: Record<string, string> = {
-    Bangladesh: "🇧🇩",
-    USA: "🇺🇸",
-    India: "🇮🇳",
-    Canada: "🇨🇦",
-    Mexico: "🇲🇽",
-  };
-  return flags[country] || "🌐";
-};
 
 export default function CampaignDetails() {
   const { id } = useParams();
@@ -85,7 +75,14 @@ export default function CampaignDetails() {
           />
           <StatCard
             title="Country"
-            value={`${getFlag(campaign.country)} ${campaign.country}`}
+            value={
+              <span className="flex items-center gap-2">
+                <span className="emoji">
+                  {getCountryFlag(campaign.country)}
+                </span>
+                {campaign.country}
+              </span>
+            }
             icon={<Globe className="text-blue-500" />}
           />
           <StatCard
@@ -131,6 +128,7 @@ export default function CampaignDetails() {
               day: "numeric",
               hour: "2-digit",
               minute: "2-digit",
+              second: "2-digit",
             })}
             icon={<Clock className="text-blue-500" />}
           />

@@ -16,14 +16,32 @@ const Page = () => {
     setIsLoading(true);
     setError("");
 
-    // Simulate API call delay
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
 
-    if (username === "ahsan" && password === "ahsan@habib") {
-      router.push("/dashboard");
-    } else {
-      setError("Invalid credentials. Please try again.");
+      const text = await res.text();
+      let data: any = {};
+
+      try {
+        data = JSON.parse(text);
+      } catch {
+        console.error("Non-JSON response:", text);
+      }
+
+      if (res.ok && data.success) {
+        router.push("/dashboard"); // now this will work
+      } else if (!res.ok) {
+        setError(data.message || "Invalid credentials");
+      }
+    } catch (err: any) {
+      console.error("Login error:", err);
+      setError(err.message || "Something went wrong. Try again.");
     }
+
     setIsLoading(false);
   };
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { countries } from "@/lib/countries";
 import { motion } from "framer-motion";
 import { ClipboardList, Loader2, Send, Smartphone } from "lucide-react";
 import { useState } from "react";
@@ -14,6 +15,7 @@ export default function SmsDashboard() {
   >([]);
   const [name, setName] = useState("");
   const [country, setCountry] = useState("");
+  const [twilioSender, setTwilioSender] = useState("+14312443960");
 
   const messageLength = message.trim().length;
   const segments = messageLength === 0 ? 0 : Math.ceil(messageLength / 160);
@@ -46,6 +48,7 @@ export default function SmsDashboard() {
           message: message.trim(),
           segments,
           estimatedCost,
+          ...(provider === "twilio" && { fromNumber: twilioSender }),
         }),
       });
 
@@ -103,6 +106,32 @@ export default function SmsDashboard() {
             </select>
           </div>
 
+          {provider === "twilio" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Twilio Sender Number
+              </label>
+              <select
+                value={twilioSender}
+                onChange={(e) => setTwilioSender(e.target.value)}
+                required
+                className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              >
+                <option value="" disabled>
+                  Select sender number
+                </option>
+                <option value="+12295149122">
+                  +12295149122 (Americus, GA, US)
+                </option>
+                <option value="+16292991476">
+                  +16292991476 (Nashville, US)
+                </option>
+                <option value="+14312443960">+14312443960 (Canada, CA)</option>
+                {/* Add more verified Twilio numbers */}
+              </select>
+            </div>
+          )}
+
           {/* Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -125,18 +154,14 @@ export default function SmsDashboard() {
               value={country}
               onChange={(e) => setCountry(e.target.value)}
               required
-              className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              className="emoji w-full p-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-yellow-500"
             >
               <option value="">Select country</option>
-              <option value="US">USA</option>
-              <option value="CA">Canada</option>
-              <option value="AR">Argentina</option>
-              <option value="CO">Colombia</option>
-              <option value="SG">Singapore</option>
-              <option value="MX">Mexico</option>
-              <option value="PE">Peru</option>
-              <option value="BD">Bangladesh</option>
-              <option value="IN">India</option>
+              {Object.values(countries).map((c) => (
+                <option key={c.name} value={c.name}>
+                  {c.flag} {c.name}
+                </option>
+              ))}
             </select>
           </div>
 

@@ -3,8 +3,9 @@ import Campaign from "@/models/Campaign";
 import axios from "axios";
 import { NextRequest, NextResponse } from "next/server";
 
-const BULKSMSBD_API_KEY = process.env.BULKSMSBD_API_KEY;
-const API_URL = process.env.BULKSMSBD_API_URL;
+const BULKSMSBD_API_KEY = process.env.BULKSMSBD_API_KEY!;
+const SENDER_ID = "8809617627311"; // Approved Sender ID
+const API_URL = "http://bulksmsbd.net/api/smsapi";
 
 const errorMap: Record<string, string> = {
   "202": "SMS submitted successfully",
@@ -36,7 +37,6 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { name, country, numbers, message, segments, estimatedCost } = body;
 
-    // Validate required fields
     if (
       !name ||
       !country ||
@@ -55,29 +55,29 @@ export async function POST(req: NextRequest) {
     const results: { to: string; status: string; error?: string }[] = [];
 
     for (const number of numbers) {
-      const url = `${API_URL}?api_key=${BULKSMSBD_API_KEY}&type=text&number=${encodeURIComponent(
-        number
-      )}&senderid=Random&message=${encodeURIComponent(message)}`;
+      const params = new URLSearchParams({
+        api_key: BULKSMSBD_API_KEY,
+        type: "text",
+        number,
+        senderid: SENDER_ID,
+        message,
+      });
 
       try {
-        const response = await axios.get(url);
-        const code =
-          typeof response.data === "object"
-            ? response.data?.status || response.data?.code
-            : response.data;
+        const response = await axios.get(`${API_URL}?${params.toString()}`);
+        const statusCode = String(response.data?.response_code);
 
-        console.log(response);
+        const isSuccess = statusCode === "202";
 
-        const errorMessage =
-          response.data.error_message ||
-          errorMap[response.data?.code] ||
-          `Unknown error (${response.data?.code})`;
-
-        if (code === "202") {
-          results.push({ to: number, status: "sent" });
-        } else {
-          results.push({ to: number, status: "failed", error: errorMessage });
-        }
+        results.push({
+          to: number,
+          status: isSuccess ? "sent" : "failed",
+          error: isSuccess
+            ? undefined
+            : errorMap[statusCode] ||
+              response.data?.error_message ||
+              "Unknown error",
+        });
       } catch (err: any) {
         results.push({
           to: number,

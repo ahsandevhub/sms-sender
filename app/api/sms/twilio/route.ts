@@ -5,7 +5,6 @@ import twilio from "twilio";
 
 const accountSid = process.env.TWILIO_ACCOUNT_SID!;
 const authToken = process.env.TWILIO_AUTH_TOKEN!;
-const fromNumber = process.env.TWILIO_PHONE_NUMBER!;
 
 const client = twilio(accountSid, authToken);
 
@@ -13,10 +12,17 @@ export async function POST(req: Request) {
   try {
     await dbConnect();
 
-    const { name, country, numbers, message, segments, estimatedCost } =
-      await req.json();
+    const body = await req.json();
+    const {
+      name,
+      country,
+      numbers,
+      message,
+      segments,
+      estimatedCost,
+      fromNumber,
+    } = body;
 
-    // Validate required fields
     if (
       !name ||
       !country ||
@@ -24,7 +30,8 @@ export async function POST(req: Request) {
       numbers.length === 0 ||
       !message ||
       !segments ||
-      !estimatedCost
+      !estimatedCost ||
+      !fromNumber
     ) {
       return NextResponse.json(
         { error: "Missing required campaign fields." },
@@ -70,10 +77,7 @@ export async function POST(req: Request) {
     await campaign.save();
 
     return NextResponse.json(
-      {
-        results,
-        campaignId: campaign._id,
-      },
+      { results, campaignId: campaign._id },
       { status: 200 }
     );
   } catch (err: any) {

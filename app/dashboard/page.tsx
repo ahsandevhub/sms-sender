@@ -1,5 +1,7 @@
 "use client";
 
+import DashboardSkeleton from "@/components/dashboard/DashboardSkeleton";
+import { getCountryFlag } from "@/lib/countries";
 import { motion } from "framer-motion";
 import {
   AlertCircle,
@@ -15,72 +17,36 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 export default function DashboardPage() {
-  // Mock data
-  const stats = {
-    totalSent: 12453,
-    successful: 11208,
-    failed: 1245,
-    pending: 542,
-    channels: [
-      { name: "SMS", value: 6842, color: "bg-yellow-500" },
-      { name: "WhatsApp", value: 3210, color: "bg-green-500" },
-      { name: "Email", value: 1987, color: "bg-blue-500" },
-      { name: "Telegram", value: 414, color: "bg-purple-500" },
-    ],
-    recentCampaigns: [
-      {
-        id: 1,
-        name: "Summer Sale",
-        date: "2023-06-15",
-        status: "completed",
-        channel: "SMS/WhatsApp",
-      },
-      {
-        id: 2,
-        name: "New Product Launch",
-        date: "2023-06-10",
-        status: "completed",
-        channel: "Email",
-      },
-      {
-        id: 3,
-        name: "Flash Sale",
-        date: "2023-06-05",
-        status: "completed",
-        channel: "All Channels",
-      },
-    ],
-    userActivity: [
-      { name: "Active", value: 42, color: "bg-yellow-500" },
-      { name: "Inactive", value: 8, color: "bg-gray-300" },
-    ],
-  };
+  const [stats, setStats] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("/api/dashboard")
+      .then((res) => res.json())
+      .then((data) => setStats(data));
+  }, []);
+
+  if (!stats) return <DashboardSkeleton />;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h2 className="text-2xl font-bold text-gray-800">Dashboard Overview</h2>
-        <div className="flex space-x-2">
-          <Link
-            href={"/dashboard/campaigns/new"}
-            className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-          >
-            <Send className="w-4 h-4" />
-            New Campaign
-          </Link>
-        </div>
+        <Link
+          href="/dashboard/campaigns/new"
+          className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+        >
+          <Send className="w-4 h-4" /> New Campaign
+        </Link>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Total Sent"
           value={stats.totalSent.toLocaleString()}
           icon={<Inbox className="text-yellow-500" />}
-          trend="up"
         />
         <StatCard
           title="Successful"
@@ -98,20 +64,16 @@ export default function DashboardPage() {
           title="Pending"
           value={stats.pending.toLocaleString()}
           icon={<Clock className="text-yellow-500" />}
-          trend="down"
         />
       </div>
 
-      {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Channel Distribution */}
         <div className="lg:col-span-1 bg-white p-4 rounded-xl shadow border border-gray-200">
           <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <PieChart className="w-5 h-5" />
-            Channel Distribution
+            <PieChart className="w-5 h-5" /> Channel Distribution
           </h3>
           <div className="space-y-2">
-            {stats.channels.map((channel) => (
+            {stats.channels.map((channel: any) => (
               <div
                 key={channel.name}
                 className="flex items-center justify-between"
@@ -130,67 +92,91 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Campaign Progress */}
         <div className="lg:col-span-2 bg-white p-4 rounded-xl shadow border border-gray-200">
           <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <BarChart2 className="w-5 h-5" />
-            Recent Campaigns
+            <BarChart2 className="w-5 h-5" /> Recent Campaigns
           </h3>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-100">
-              <thead>
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-800 uppercase">
-                    Campaign
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-800 uppercase">
-                    Date
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-800 uppercase">
-                    Channel
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-800 uppercase">
-                    Status
-                  </th>
+          <table className="min-w-full divide-y divide-gray-100">
+            <thead>
+              <tr>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-800 uppercase">
+                  Campaign
+                </th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-800 uppercase">
+                  Date
+                </th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-800 uppercase">
+                  Channel
+                </th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-800 uppercase">
+                  Status
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {stats.recentCampaigns.map((campaign: any) => (
+                <tr key={campaign.id}>
+                  <td className="px-4 py-3 text-sm font-medium text-gray-800 whitespace-nowrap">
+                    {campaign.name}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+                    {new Date(campaign.date).toLocaleString("en-US", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                    })}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+                    {campaign.channel}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span
+                      className={`px-2 py-1 text-xs rounded-full ${
+                        campaign.status === "completed"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-yellow-100 text-yellow-800"
+                      }`}
+                    >
+                      {campaign.status}
+                    </span>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {stats.recentCampaigns.map((campaign) => (
-                  <tr key={campaign.id}>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-800">
-                      {campaign.name}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                      {campaign.date}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                      {campaign.channel}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span
-                        className={`px-2 py-1 text-xs rounded-full ${
-                          campaign.status === "completed"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-yellow-100 text-yellow-800"
-                        }`}
-                      >
-                        {campaign.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      {/* User Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Contacts By Country */}
         <div className="bg-white p-4 rounded-xl shadow border border-gray-200">
           <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
             <Users className="w-5 h-5" />
-            User Activity
+            Contacts by Country
+          </h3>
+          <div className="space-y-2">
+            {Object.entries(stats.contactsByCountry).map(
+              ([country, count]: any) => (
+                <div
+                  key={country}
+                  className="flex justify-between text-sm text-gray-700"
+                >
+                  <span className="emoji">
+                    {getCountryFlag(country)} {country}
+                  </span>
+                  <span className="font-medium">{count}</span>
+                </div>
+              )
+            )}
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl shadow border border-gray-200">
+          <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <Users className="w-5 h-5" /> User Activity
           </h3>
           <div className="flex items-center justify-center h-64">
             <DoughnutChart data={stats.userActivity} />
@@ -199,8 +185,7 @@ export default function DashboardPage() {
 
         <div className="bg-white p-4 rounded-xl shadow border border-gray-200">
           <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <BarChart2 className="w-5 h-5" />
-            Quick Actions
+            <BarChart2 className="w-5 h-5" /> Quick Actions
           </h3>
           <div className="grid grid-cols-2 gap-4">
             <QuickActionCard
@@ -230,8 +215,7 @@ export default function DashboardPage() {
   );
 }
 
-// Updated StatCard without Tremor
-function StatCard({ title, value, icon, percentage, trend }: any) {
+function StatCard({ title, value, icon, percentage }: any) {
   return (
     <div className="bg-white p-4 rounded-xl shadow border border-gray-200">
       <div className="flex items-center justify-between">
@@ -239,7 +223,7 @@ function StatCard({ title, value, icon, percentage, trend }: any) {
           <p className="text-sm font-medium text-gray-600">{title}</p>
           <p className="text-2xl font-semibold text-gray-800">{value}</p>
         </div>
-        {percentage ? (
+        {percentage !== undefined ? (
           <div className="relative w-12 h-12">
             <svg className="w-full h-full" viewBox="0 0 36 36">
               <circle
@@ -276,7 +260,6 @@ function StatCard({ title, value, icon, percentage, trend }: any) {
   );
 }
 
-// QuickActionCard remains the same
 function QuickActionCard({ icon, title, action }: any) {
   return (
     <motion.button
@@ -291,7 +274,6 @@ function QuickActionCard({ icon, title, action }: any) {
   );
 }
 
-// DoughnutChart remains the same
 function DoughnutChart({ data }: any) {
   const total = data.reduce((sum: number, item: any) => sum + item.value, 0);
   const circumference = 2 * Math.PI * 40;
@@ -299,7 +281,6 @@ function DoughnutChart({ data }: any) {
   return (
     <div className="relative w-40 h-40">
       <svg className="w-full h-full" viewBox="0 0 100 100">
-        {/* Background circle */}
         <circle
           cx="50"
           cy="50"
@@ -308,10 +289,8 @@ function DoughnutChart({ data }: any) {
           stroke="#fef3c7"
           strokeWidth="10"
         />
-        {/* Segments */}
         {data.map((item: any, index: number) => {
           const percent = item.value / total;
-          const offset = circumference * (1 - percent);
           const prevPercent = data
             .slice(0, index)
             .reduce((sum: number, i: any) => sum + i.value / total, 0);
