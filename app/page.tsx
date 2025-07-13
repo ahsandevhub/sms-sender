@@ -1,15 +1,36 @@
 "use client";
 
-import { Lock, MailCheck, User } from "lucide-react";
+import { Eye, EyeOff, Lock, MailCheck, User } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const Page = () => {
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  // 🚀 Auto-redirect if already logged in
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await fetch("/api/auth/me", { credentials: "include" });
+        const data = await res.json();
+        if (data.authenticated) {
+          router.replace("/dashboard");
+        }
+      } catch (err) {
+        console.error("Auth check failed", err);
+      } finally {
+        setCheckingAuth(false);
+      }
+    };
+
+    checkAuth();
+  }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,9 +47,8 @@ const Page = () => {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        // ✅ Delay ensures cookie is committed before navigating
         setTimeout(() => {
-          window.location.href = "/dashboard"; // works better than router.push in this edge case
+          window.location.href = "/dashboard"; // works best with httpOnly cookie
         }, 100);
       } else {
         setError(data.message || "Invalid credentials");
@@ -40,6 +60,14 @@ const Page = () => {
 
     setIsLoading(false);
   };
+
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-gray-50 flex justify-center items-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-gray-50 flex items-center justify-center p-4">
@@ -95,13 +123,23 @@ const Page = () => {
                     <Lock className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition"
+                    className="pl-10 pr-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition"
                     placeholder="Enter your password"
                     required
                   />
+                  <div
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer text-gray-400"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
+                  </div>
                 </div>
               </div>
 

@@ -42,10 +42,10 @@ export default function DashboardLayout({
           <img
             src="/WeTrainEducation Icon.png"
             alt="icon"
-            className="size-10"
+            className="h-10 w-auto"
           />
           <div className="flex flex-col">
-            <h1 className="text-lg font-bold text-gray-800">WeSend</h1>
+            <h1 className="text-2xl font-bold text-gray-800">WeSend</h1>
             <p className="text-[11px] text-gray-500 -mt-0.5">
               Multi Channel Promotion
             </p>

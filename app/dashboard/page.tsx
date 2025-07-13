@@ -1,6 +1,6 @@
 "use client";
 
-import DashboardSkeleton from "@/components/dashboard/DashboardSkeleton";
+import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
 import { getCountryFlag } from "@/lib/countries";
 import { motion } from "framer-motion";
 import {

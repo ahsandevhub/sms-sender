@@ -1,9 +1,18 @@
 "use client";
 
-import { countries } from "@/lib/countries";
+import { countries, getCountryFlag } from "@/lib/countries";
 import { motion } from "framer-motion";
-import { ClipboardList, Loader2, Send, Smartphone } from "lucide-react";
-import { useState } from "react";
+import {
+  Activity,
+  ClipboardCheck,
+  Clock,
+  Inbox,
+  ListOrdered,
+  Loader2,
+  Send,
+  Smartphone,
+} from "lucide-react";
+import { useMemo, useState } from "react";
 
 export default function SmsDashboard() {
   const [provider, setProvider] = useState("");
@@ -16,6 +25,13 @@ export default function SmsDashboard() {
   const [name, setName] = useState("");
   const [country, setCountry] = useState("");
   const [twilioSender, setTwilioSender] = useState("+14312443960");
+  const [contactCount, setContactCount] = useState(0);
+  const totalRecipients = useMemo(() => {
+    return numbers
+      .split("\n")
+      .map((num) => num.trim())
+      .filter(Boolean).length;
+  }, [numbers]);
 
   const messageLength = message.trim().length;
   const segments = messageLength === 0 ? 0 : Math.ceil(messageLength / 160);
@@ -24,6 +40,35 @@ export default function SmsDashboard() {
     .map((num) => num.trim())
     .filter(Boolean);
   const estimatedCost = segments * numbersArray.length;
+
+  const handleCountryChange = async (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    const selectedCountry = e.target.value;
+    setCountry(selectedCountry);
+    setNumbers(""); // reset first
+
+    try {
+      const res = await fetch("/api/contacts/by-country", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ country: selectedCountry }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setNumbers(data.numbers);
+        const count = data.numbers.split("\n").filter(Boolean).length;
+        setContactCount(count);
+      } else {
+        setNumbers("");
+        setContactCount(0);
+      }
+    } catch {
+      setNumbers("");
+      setContactCount(0);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,6 +131,20 @@ export default function SmsDashboard() {
           onSubmit={handleSubmit}
           className="lg:col-span-3 space-y-6 bg-white p-6 rounded-xl shadow border border-gray-200"
         >
+          {/* Name */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Campaign Name
+            </label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              placeholder="Your campaign name here..."
+              className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+            />
+          </div>
+
           {/* Provider Select */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -132,19 +191,6 @@ export default function SmsDashboard() {
             </div>
           )}
 
-          {/* Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Campaign Name
-            </label>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-yellow-500"
-            />
-          </div>
-
           {/* Country */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -152,7 +198,7 @@ export default function SmsDashboard() {
             </label>
             <select
               value={country}
-              onChange={(e) => setCountry(e.target.value)}
+              onChange={handleCountryChange}
               required
               className="emoji w-full p-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-yellow-500"
             >
@@ -167,11 +213,16 @@ export default function SmsDashboard() {
 
           {/* Numbers */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Recipient Numbers (one per line)
-            </label>
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Recipient Numbers (one per line)
+              </label>
+              <p className="text-sm text-gray-500 mt-1">
+                Total Recipients: <strong>{totalRecipients}</strong>
+              </p>
+            </div>
             <textarea
-              rows={5}
+              rows={8}
               placeholder="88017XXXXXXXX"
               value={numbers}
               onChange={(e) => setNumbers(e.target.value)}
@@ -230,47 +281,178 @@ export default function SmsDashboard() {
 
         {/* Logs */}
         <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow border border-gray-200 space-y-4 h-fit">
-          <div className="flex items-center gap-3">
-            <ClipboardList className="w-5 h-5 text-yellow-500" />
-            <h3 className="text-lg font-semibold text-gray-800">
-              Delivery Logs
-            </h3>
+          {/* ✅ Summary Section Here */}
+          <div className="space-y-3 border-b border-gray-200 pb-5 mb-5">
+            <div className="flex items-center gap-2 mb-3">
+              <ClipboardCheck className="w-5 h-5 text-yellow-500" />
+              <h4 className="text-base font-semibold text-gray-800">
+                Campaign Summary
+              </h4>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* Row 1 */}
+              <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                <p className="text-xs font-medium text-gray-500 mb-1">
+                  Campaign Name
+                </p>
+                <p className="font-medium text-gray-800">
+                  {name || <span className="text-gray-400">N/A</span>}
+                </p>
+              </div>
+
+              <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                <p className="text-xs font-medium text-gray-500 mb-1">
+                  Target Country
+                </p>
+                <p className="emoji font-medium text-gray-800">
+                  {`${getCountryFlag(country)} ${country}` || (
+                    <span className="text-gray-400">N/A</span>
+                  )}
+                </p>
+              </div>
+
+              {/* Row 2 */}
+              <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                <p className="text-xs font-medium text-gray-500 mb-1">
+                  Provider
+                </p>
+                <p className="font-medium text-gray-800">
+                  {provider || <span className="text-gray-400">N/A</span>}
+                </p>
+              </div>
+
+              <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                <p className="text-xs font-medium text-gray-500 mb-1">
+                  Total Recipients
+                </p>
+                <p className="font-medium text-gray-800">
+                  {contactCount || numbersArray.length || (
+                    <span className="text-gray-400">0</span>
+                  )}
+                </p>
+              </div>
+            </div>
           </div>
 
-          {logs.length === 0 ? (
-            <div className="text-center py-6 text-gray-500">
-              <p>No logs yet. Messages you send will appear here.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {logs.map((log, i) => (
-                <div
-                  key={i}
-                  className={`p-4 rounded-lg ${
-                    log.status === "sent"
-                      ? "bg-green-50 border-l-4 border-green-500"
-                      : "bg-red-50 border-l-4 border-red-500"
-                  }`}
-                >
-                  <p className="font-medium">
-                    <span className="text-gray-700">{log.to}</span>
-                    <span
-                      className={`ml-2 px-2 py-1 text-xs rounded-full ${
-                        log.status === "sent"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-red-100 text-red-800"
-                      }`}
-                    >
-                      {log.status}
-                    </span>
+          {logs.length > 0 && (
+            <div className="border-gray-200">
+              <div className="flex items-center gap-2 mb-3">
+                <Activity className="w-5 h-5 text-yellow-500" />
+                <h4 className="text-base font-semibold text-gray-800">
+                  Delivery Summary
+                </h4>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {/* Total Attempted */}
+                <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                  <p className="text-xs font-medium text-gray-500 mb-1">
+                    Total Attempted
                   </p>
-                  {log.error && (
-                    <p className="mt-1 text-sm text-red-600">{log.error}</p>
-                  )}
+                  <p className="font-medium text-gray-800">{logs.length}</p>
                 </div>
-              ))}
+
+                {/* Successfully Sent */}
+                <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                  <p className="text-xs font-medium text-gray-500 mb-1">
+                    Successfully Sent
+                  </p>
+                  <p className="font-medium text-green-600">
+                    {logs.filter((log) => log.status === "sent").length}
+                  </p>
+                </div>
+
+                {/* Failed */}
+                <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                  <p className="text-xs font-medium text-gray-500 mb-1">
+                    Failed
+                  </p>
+                  <p className="font-medium text-red-600">
+                    {logs.filter((log) => log.status === "failed").length}
+                  </p>
+                </div>
+
+                {/* Success Rate */}
+                <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                  <p className="text-xs font-medium text-gray-500 mb-1">
+                    Success Rate
+                  </p>
+                  <p className="font-medium text-gray-800">
+                    {(
+                      (logs.filter((log) => log.status === "sent").length /
+                        logs.length) *
+                      100
+                    ).toFixed(1)}
+                    %
+                  </p>
+                </div>
+              </div>
             </div>
           )}
+
+          {/* Delivery Logs Section */}
+          <div className="mt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <ListOrdered className="w-5 h-5 text-yellow-500" />
+              <h4 className="text-base font-semibold text-gray-800">
+                Delivery Logs
+              </h4>
+            </div>
+
+            {logs.length === 0 ? (
+              <div className="bg-gray-50 rounded-lg border border-gray-200 p-8 text-center">
+                <Inbox className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+                <p className="text-gray-500">
+                  No logs yet. Messages will appear here once sent.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {logs.map((log, i) => (
+                  <div
+                    key={i}
+                    className={`p-4 rounded-lg border transition-all ${
+                      log.status === "sent"
+                        ? "border-green-100 bg-green-50 hover:bg-green-100"
+                        : "border-red-100 bg-red-50 hover:bg-red-100"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="font-medium text-gray-800">{log.to}</p>
+                        {log.error && (
+                          <p className="mt-1 text-sm text-red-600">
+                            {log.error}
+                          </p>
+                        )}
+                      </div>
+                      <span
+                        className={`px-3 py-1 text-xs rounded-full font-medium ${
+                          log.status === "sent"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {log.status === "sent" ? "Delivered" : "Failed"}
+                      </span>
+                    </div>
+                    <div className="mt-2 flex items-center text-xs text-gray-500">
+                      <Clock className="w-3 h-3 mr-1" />
+                      {new Date().toLocaleString("en-US", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
