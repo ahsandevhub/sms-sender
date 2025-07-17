@@ -27,32 +27,38 @@ export async function POST(req: Request) {
       );
     }
 
-    const sendDate = new Date().toISOString().slice(0, 16).replace("T", " "); // "YYYY-MM-DD HH:mm"
+    const sendDate = new Date().toISOString().slice(0, 16).replace("T", " "); // e.g. "2025-07-17 20:30"
 
     const results: { to: string; status: string; error?: string }[] = [];
 
     for (const to of numbers) {
       const payload = {
-        priority: true,
-        certificate: false,
-        sendDate,
-        campaignName: name,
-        from: "WMT_Promo", // Optional, depends on Hablame setup
-        flash: false,
-        messages: [
-          {
-            to,
-            text: message,
-          },
-        ],
+        payLoad: {
+          priority: true,
+          certificate: false,
+          sendDate,
+          campaignName: name,
+          from: "WeMasterTrade", // Optional, must be approved
+          flash: false,
+          messages: [
+            {
+              to,
+              text: message,
+              costCenter: 123,
+              reference01: "app",
+              reference02: "dashboard",
+              reference03: "campaign",
+            },
+          ],
+        },
       };
 
       try {
         const response = await fetch(HABLAME_API_URL, {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
             Accept: "application/json",
+            "Content-Type": "application/json",
             "X-Hablame-Key": API_KEY,
           },
           body: JSON.stringify(payload),
