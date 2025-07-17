@@ -28,7 +28,7 @@ export const countries: Record<string, CountryConfig> = {
     name: "United Kingdom",
     code: "UK",
     flag: "🇬🇧",
-    phoneRegex: /^44\d{10}$/, // ✅ Fixed UK regex (UK prefix is 44, not 1)
+    phoneRegex: /^44\d{10}$/,
     phonePrefix: "44",
     example: "447911123456",
   },
@@ -87,6 +87,38 @@ export const countries: Record<string, CountryConfig> = {
     phoneRegex: /^65\d{8}$/,
     phonePrefix: "65",
     example: "6591234567",
+  },
+  Guatemala: {
+    name: "Guatemala",
+    code: "GT",
+    flag: "🇬🇹",
+    phoneRegex: /^502\d{8}$/,
+    phonePrefix: "502",
+    example: "50251234567",
+  },
+  "El Salvador": {
+    name: "El Salvador",
+    code: "SV",
+    flag: "🇸🇻",
+    phoneRegex: /^503\d{8}$/,
+    phonePrefix: "503",
+    example: "50371234567",
+  },
+  Ecuador: {
+    name: "Ecuador",
+    code: "EC",
+    flag: "🇪🇨",
+    phoneRegex: /^593\d{9}$/,
+    phonePrefix: "593",
+    example: "593991234567",
+  },
+  Chile: {
+    name: "Chile",
+    code: "CL",
+    flag: "🇨🇱",
+    phoneRegex: /^56\d{9}$/,
+    phonePrefix: "56",
+    example: "56912345678",
   },
 };
 
