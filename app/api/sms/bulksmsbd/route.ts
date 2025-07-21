@@ -4,7 +4,7 @@ import axios from "axios";
 import { NextRequest, NextResponse } from "next/server";
 
 const BULKSMSBD_API_KEY = process.env.BULKSMSBD_API_KEY!;
-const SENDER_ID = "8809617627311"; // Approved Sender ID
+const SENDER_ID = "WeTrainEdu"; // Approved Sender ID
 const API_URL = "http://bulksmsbd.net/api/smsapi";
 
 const errorMap: Record<string, string> = {
