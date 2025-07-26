@@ -1,10 +1,15 @@
+export type Provider = "twilio" | "bulksmsbd" | "cheapglobalsms" | "hablame";
+
 export interface CountryConfig {
   name: string;
-  code: string; // ISO 3166-1 alpha-2
+  code: string;
   flag: string;
   phoneRegex: RegExp;
-  phonePrefix: string; // Without "+"
-  example: string; // ✅ Added: Sample number format
+  phonePrefix: string;
+  example: string;
+  smsRate?: Partial<Record<Provider, number>>;
+  recommended?: Provider;
+  language?: string;
 }
 
 export const countries: Record<string, CountryConfig> = {
@@ -15,22 +20,9 @@ export const countries: Record<string, CountryConfig> = {
     phoneRegex: /^8801[3-9]\d{8}$/,
     phonePrefix: "880",
     example: "8801712345678",
-  },
-  "United States": {
-    name: "United States",
-    code: "US",
-    flag: "🇺🇸",
-    phoneRegex: /^1\d{10}$/,
-    phonePrefix: "1",
-    example: "14165551234",
-  },
-  "United Kingdom": {
-    name: "United Kingdom",
-    code: "UK",
-    flag: "🇬🇧",
-    phoneRegex: /^44\d{10}$/,
-    phonePrefix: "44",
-    example: "447911123456",
+    smsRate: { bulksmsbd: 0.0031 },
+    recommended: "bulksmsbd",
+    language: "bn", // Bengali
   },
   Canada: {
     name: "Canada",
@@ -38,15 +30,10 @@ export const countries: Record<string, CountryConfig> = {
     flag: "🇨🇦",
     phoneRegex: /^1\d{10}$/,
     phonePrefix: "1",
-    example: "15145551234",
-  },
-  India: {
-    name: "India",
-    code: "IN",
-    flag: "🇮🇳",
-    phoneRegex: /^91\d{10}$/,
-    phonePrefix: "91",
-    example: "919812345678",
+    example: "12065551234",
+    smsRate: { twilio: 0.0166 },
+    recommended: "twilio",
+    language: "en", // English (main), also fr
   },
   Mexico: {
     name: "Mexico",
@@ -55,22 +42,9 @@ export const countries: Record<string, CountryConfig> = {
     phoneRegex: /^52\d{10}$/,
     phonePrefix: "52",
     example: "5215512345678",
-  },
-  Colombia: {
-    name: "Colombia",
-    code: "CO",
-    flag: "🇨🇴",
-    phoneRegex: /^57\d{10}$/,
-    phonePrefix: "57",
-    example: "573012345678",
-  },
-  Argentina: {
-    name: "Argentina",
-    code: "AR",
-    flag: "🇦🇷",
-    phoneRegex: /^54\d{10}$/,
-    phonePrefix: "54",
-    example: "541112345678",
+    smsRate: { twilio: 0.3022, cheapglobalsms: 0.016, hablame: 0.0309 },
+    recommended: "cheapglobalsms",
+    language: "es", // Spanish
   },
   Peru: {
     name: "Peru",
@@ -79,6 +53,31 @@ export const countries: Record<string, CountryConfig> = {
     phoneRegex: /^51\d{9}$/,
     phonePrefix: "51",
     example: "51912345678",
+    smsRate: { twilio: 0.4952, cheapglobalsms: 0.192 },
+    recommended: "hablame",
+    language: "es", // Spanish
+  },
+  Argentina: {
+    name: "Argentina",
+    code: "AR",
+    flag: "🇦🇷",
+    phoneRegex: /^54\d{10}$/,
+    phonePrefix: "54",
+    example: "541112345678",
+    smsRate: { twilio: 0.187, cheapglobalsms: 0.182 },
+    recommended: "cheapglobalsms",
+    language: "es", // Spanish
+  },
+  Colombia: {
+    name: "Colombia",
+    code: "CO",
+    flag: "🇨🇴",
+    phoneRegex: /^57\d{10}$/,
+    phonePrefix: "57",
+    example: "573012345678",
+    smsRate: { twilio: 0.105, cheapglobalsms: 0.014, hablame: 0.0112 },
+    recommended: "hablame",
+    language: "es", // Spanish
   },
   Singapore: {
     name: "Singapore",
@@ -87,14 +86,9 @@ export const countries: Record<string, CountryConfig> = {
     phoneRegex: /^65\d{8}$/,
     phonePrefix: "65",
     example: "6591234567",
-  },
-  Guatemala: {
-    name: "Guatemala",
-    code: "GT",
-    flag: "🇬🇹",
-    phoneRegex: /^502\d{8}$/,
-    phonePrefix: "502",
-    example: "50251234567",
+    smsRate: { twilio: 0.1185 },
+    recommended: "twilio",
+    language: "en", // English (official), also zh, ms, ta
   },
   "El Salvador": {
     name: "El Salvador",
@@ -103,6 +97,9 @@ export const countries: Record<string, CountryConfig> = {
     phoneRegex: /^503\d{8}$/,
     phonePrefix: "503",
     example: "50371234567",
+    smsRate: { twilio: 0.4754, cheapglobalsms: 0.5, hablame: 0.0567 },
+    recommended: "hablame",
+    language: "es", // Spanish
   },
   Ecuador: {
     name: "Ecuador",
@@ -111,6 +108,9 @@ export const countries: Record<string, CountryConfig> = {
     phoneRegex: /^593\d{9}$/,
     phonePrefix: "593",
     example: "593991234567",
+    smsRate: { twilio: 0.67, hablame: 0.0258 },
+    recommended: "hablame",
+    language: "es", // Spanish
   },
   Chile: {
     name: "Chile",
@@ -119,6 +119,20 @@ export const countries: Record<string, CountryConfig> = {
     phoneRegex: /^56\d{9}$/,
     phonePrefix: "56",
     example: "56912345678",
+    smsRate: { cheapglobalsms: 0.008, hablame: 0.0412 },
+    recommended: "cheapglobalsms",
+    language: "es", // Spanish
+  },
+  Guatemala: {
+    name: "Guatemala",
+    code: "GT",
+    flag: "🇬🇹",
+    phoneRegex: /^502\d{8}$/,
+    phonePrefix: "502",
+    example: "50251234567",
+    smsRate: { twilio: 0.4996 },
+    recommended: "twilio",
+    language: "es", // Spanish
   },
 };
 
@@ -131,12 +145,63 @@ export const getCountryCode = (country: string): string =>
 export const isValidPhone = (phone: string, country: string): boolean =>
   countries[country]?.phoneRegex.test(phone.replace(/\D/g, "")) ?? false;
 
-export const formatPhone = (raw: string, country: string): string | null => {
-  const digits = raw.replace(/\D/g, "");
-  const prefix = countries[country]?.phonePrefix;
+export interface FormattedPhoneResult {
+  formatted: string | null;
+  correctedFromExcel?: boolean;
+  correctedLeadingZero?: boolean;
+}
 
-  if (!prefix || !digits.startsWith(prefix)) return null;
+export const formatPhone = (
+  raw: string,
+  country: string
+): FormattedPhoneResult => {
+  const config = countries[country];
+  if (!config) return { formatted: null };
 
-  const full = `+${digits}`;
-  return isValidPhone(full, country) ? full : null;
+  let digits = raw.replace(/[^\d]/g, "");
+  const prefix = config.phonePrefix;
+  let correctedFromExcel = false;
+  let correctedLeadingZero = false;
+
+  // ✅ Excel fix
+  if (/e\+/i.test(raw)) {
+    try {
+      const parsed = Number(raw).toFixed(0);
+      if (!/^\d{11,15}$/.test(parsed)) return { formatted: null };
+      digits = parsed;
+      correctedFromExcel = true;
+    } catch {
+      return { formatted: null };
+    }
+  }
+
+  // ✅ Leading 0 after country code
+  if (digits.startsWith(prefix + "0")) {
+    digits = prefix + digits.slice(prefix.length + 1);
+    correctedLeadingZero = true;
+  }
+
+  // ✅ Local 0
+  if (digits.startsWith("0")) {
+    digits = digits.slice(1);
+    correctedLeadingZero = true;
+  }
+
+  // ✅ Double prefix
+  if (digits.startsWith(prefix + prefix)) {
+    digits = digits.slice(prefix.length);
+  }
+
+  // ✅ Add prefix if needed
+  if (!digits.startsWith(prefix)) {
+    digits = prefix + digits;
+  }
+
+  const formatted = `+${digits}`;
+  const valid = isValidPhone(formatted, country);
+  return {
+    formatted: valid ? formatted : null,
+    correctedFromExcel,
+    correctedLeadingZero,
+  };
 };

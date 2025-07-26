@@ -25,6 +25,7 @@ interface PreviewItem {
   formatted: string;
   valid: boolean;
   reason?: string;
+  country?: string; // ✅ Add this line
 }
 
 interface ResponseState {
@@ -34,19 +35,63 @@ interface ResponseState {
 }
 
 const formatAndValidate = (raw: string, country: string): PreviewItem => {
-  const digits = raw.replace(/[^0-9+]/g, "");
-  if (!digits)
-    return { number: raw, formatted: "", valid: false, reason: "Empty line" };
+  const result = formatPhone(raw, country);
 
-  const formatted = formatPhone(digits, country);
-  const valid = formatted !== null;
-  const reason = valid ? undefined : "Invalid phone number";
+  if (!raw.trim()) {
+    return {
+      number: raw,
+      formatted: "",
+      valid: false,
+      reason: "Empty line",
+    };
+  }
+
+  if (!result.formatted) {
+    return {
+      number: raw,
+      formatted: "",
+      valid: false,
+      reason: "Invalid phone number",
+    };
+  }
+
+  let reason: string | undefined;
+  if (result.correctedFromExcel) reason = "Auto-corrected Excel number";
+  else if (result.correctedLeadingZero) reason = "Removed leading 0";
 
   return {
     number: raw,
-    formatted: formatted || "",
-    valid,
+    formatted: result.formatted,
+    valid: true,
     reason,
+  };
+};
+
+const tryAutoDetect = (raw: string): PreviewItem => {
+  for (const key in countries) {
+    const cfg = countries[key];
+    const result = formatPhone(raw, cfg.name);
+
+    if (result.formatted) {
+      let reason: string | undefined;
+      if (result.correctedFromExcel) reason = "Auto-corrected Excel number";
+      else if (result.correctedLeadingZero) reason = "Removed leading 0";
+
+      return {
+        number: raw,
+        formatted: result.formatted,
+        valid: true,
+        reason,
+        country: cfg.name, // ✅ include country
+      };
+    }
+  }
+
+  return {
+    number: raw,
+    formatted: "",
+    valid: false,
+    reason: "Could not detect country",
   };
 };
 
@@ -67,6 +112,11 @@ export default function AddContactPage() {
   const totalCount = preview.length;
   const validCount = preview.filter((p) => p.valid).length;
   const invalidCount = totalCount - validCount;
+  const [progressText, setProgressText] = useState("");
+  const [progressPercent, setProgressPercent] = useState(0);
+  const [savingPreview, setSavingPreview] = useState<
+    { phone: string; status: "saving" | "saved" | "skipped"; reason?: string }[]
+  >([]);
 
   useEffect(() => {
     if (!country) {
@@ -78,7 +128,11 @@ export default function AddContactPage() {
       .split("\n")
       .map((line) => line.trim())
       .filter(Boolean)
-      .map((line) => formatAndValidate(line, country));
+      .map((line) =>
+        country === "auto"
+          ? tryAutoDetect(line)
+          : formatAndValidate(line, country)
+      );
     setPreview(lines);
   }, [rawNumbers, country]);
 
@@ -86,59 +140,89 @@ export default function AddContactPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
+    setProgressText("Preparing contacts...");
 
-    // Fix: Change 'contact' to 'phone' to match backend expectation
     const validContacts = preview
       .filter((p) => p.valid)
-      .map((p) => ({ phone: p.formatted, country }));
+      .map((p) => {
+        const matched = Object.values(countries).find((cfg) =>
+          p.formatted.startsWith("+" + cfg.phonePrefix)
+        );
+        return {
+          phone: p.formatted,
+          country: matched?.name || "Unknown",
+        };
+      });
 
     if (validContacts.length === 0) {
+      toast.error("No valid contacts to save.");
       setSaving(false);
       return;
     }
 
-    try {
-      const res = await fetch("/api/contacts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contacts: validContacts }),
-      });
+    const total = validContacts.length;
+    const newSaved: string[] = [];
+    const newSkipped: { phone: string; reason: string }[] = [];
 
-      const data = await res.json();
+    setSavingPreview(
+      validContacts.map((c) => ({ phone: c.phone, status: "saving" }))
+    );
 
-      if (res.ok) {
-        const { created, skipped, details } = data;
-        const reasons = [
-          ...new Set(
-            (details.skipped as { reason?: string }[]).map(
-              (s) => s.reason || "Unknown reason"
+    for (let i = 0; i < total; i++) {
+      const contact = validContacts[i];
+      setProgressText(`Saving contact ${i + 1} of ${total}`);
+      setProgressPercent(Math.round(((i + 1) / total) * 100));
+
+      try {
+        const res = await fetch("/api/contacts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contacts: [contact] }),
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          newSaved.push(contact.phone);
+          setSavingPreview((prev) =>
+            prev.map((p) =>
+              p.phone === contact.phone ? { ...p, status: "saved" } : p
             )
-          ),
-        ];
-        setSaveResult({ saved: created, skipped, reasons });
-        setSavedContacts(details.created.map((c: any) => c.phone));
-        setSkippedContacts(
-          details.skipped.map((c: any) => ({
-            phone: c.phone,
-            reason: c.reason || "Unknown reason",
-          }))
-        );
-        setPreview([]);
-
-        if (created > 0) {
-          toast.success(`Saved ${created} contacts`);
-          setRawNumbers("");
-        } else if (skipped > 0) {
-          toast.error(`No contacts saved. ${skipped} skipped`);
+          );
+        } else {
+          const reason =
+            data?.details?.skipped?.[0]?.reason || "Server rejected";
+          newSkipped.push({ phone: contact.phone, reason });
+          setSavingPreview((prev) =>
+            prev.map((p) =>
+              p.phone === contact.phone
+                ? { ...p, status: "skipped", reason }
+                : p
+            )
+          );
         }
-      } else {
-        toast.error(data.error || "Failed to save contacts");
+      } catch (err: any) {
+        newSkipped.push({ phone: contact.phone, reason: "Network error" });
+        setSavingPreview((prev) =>
+          prev.map((p) =>
+            p.phone === contact.phone
+              ? { ...p, status: "skipped", reason: "Network error" }
+              : p
+          )
+        );
       }
-    } catch (err: any) {
-      toast.error(err.message || "Network error");
-    } finally {
-      setSaving(false);
     }
+
+    setSavedContacts(newSaved);
+    setSkippedContacts(newSkipped);
+    setSaveResult({
+      saved: newSaved.length,
+      skipped: newSkipped.length,
+      reasons: [...new Set(newSkipped.map((s) => s.reason))],
+    });
+    setRawNumbers("");
+    setPreview([]);
+    setSaving(false);
+    toast.success(`Saved ${newSaved.length}, Skipped ${newSkipped.length}`);
   };
 
   return (
@@ -167,6 +251,7 @@ export default function AddContactPage() {
               className="emoji w-full p-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-yellow-500"
             >
               <option value="">Select Country</option>
+              <option value="auto">🌍 Auto Detect</option>
               {Object.entries(countries).map(([key, cfg]) => (
                 <option key={key} value={cfg.name}>
                   {cfg.flag} {cfg.name}
@@ -245,6 +330,73 @@ export default function AddContactPage() {
         {/* Right: Preview Box */}
         <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-6">
           {/* Validation Summary Section */}
+          {(saving || savingPreview.length > 0) && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90">
+              <div className="bg-white w-full max-w-2xl mx-auto rounded-xl shadow-xl border border-gray-200 p-6 space-y-6 max-h-[90vh] overflow-y-auto relative">
+                {/* Progress Bar Section */}
+                {saving && (
+                  <div className="w-full bg-gray-100 border border-yellow-200 rounded-lg p-4 text-sm space-y-2">
+                    <p className="text-yellow-700 font-medium">
+                      {progressText}
+                    </p>
+                    <div className="w-full h-3 bg-yellow-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-yellow-500 transition-all duration-300"
+                        style={{ width: `${progressPercent}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Saving Preview */}
+                {savingPreview.length > 0 && (
+                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="max-h-[400px] overflow-y-auto divide-y divide-gray-100">
+                      {savingPreview.map((item, i) => (
+                        <div
+                          key={i}
+                          className="p-3 flex items-center justify-between text-sm bg-white"
+                        >
+                          <div className="flex gap-2 items-center font-mono truncate">
+                            {item.status === "saving" && (
+                              <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                            )}
+                            {item.status === "saved" && (
+                              <CheckCircle2 className="w-4 h-4 text-green-600" />
+                            )}
+                            {item.status === "skipped" && (
+                              <XCircle className="w-4 h-4 text-red-600" />
+                            )}
+                            <span>{item.phone}</span>
+                          </div>
+                          {item.status === "skipped" && (
+                            <span className="text-xs text-red-600 bg-white border border-red-300 px-2 py-0.5 rounded-full">
+                              {item.reason}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Close Button */}
+                {!saving && savingPreview.length > 0 && (
+                  <div className="pt-4 text-right">
+                    <button
+                      onClick={() => {
+                        setSavingPreview([]); // Reset preview
+                      }}
+                      className="px-4 py-2 bg-yellow-500 text-white text-sm rounded-lg hover:bg-yellow-600 transition"
+                    >
+                      Close
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {!saveResult && (
             <div className="space-y-4">
               <div className="flex items-center gap-3">
@@ -263,7 +415,7 @@ export default function AddContactPage() {
                   </h4>
                 </div>
 
-                {country ? (
+                {country && country !== "auto" ? (
                   <div className="flex items-center justify-between gap-2 text-sm">
                     <p className="text-gray-500">
                       Selected:{" "}
@@ -284,12 +436,12 @@ export default function AddContactPage() {
                       </span>
                     </p>
                   </div>
-                ) : (
+                ) : country === "" ? (
                   <p className="text-sm text-red-600 flex items-center gap-1">
                     <AlertCircle className="w-4 h-4" />
                     Please select a country to validate numbers
                   </p>
-                )}
+                ) : null}
               </div>
 
               <div className="grid grid-cols-3 gap-3">
@@ -340,6 +492,34 @@ export default function AddContactPage() {
                   </div>
                 </div>
               </div>
+              {country === "auto" && (
+                <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg mt-2">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                    Country-wise Valid Numbers
+                  </h4>
+                  <div className="space-y-1 text-sm text-gray-600">
+                    {Object.entries(
+                      preview.reduce((acc, p) => {
+                        if (!p.valid || !p.country) return acc;
+                        acc[p.country] = (acc[p.country] || 0) + 1;
+                        return acc;
+                      }, {} as Record<string, number>)
+                    ).map(([c, count]) => (
+                      <div
+                        key={c}
+                        className="emoji flex items-center justify-between"
+                      >
+                        <span>
+                          {countries[c]?.flag || "🌍"} {c}
+                        </span>
+                        <span className="font-semibold text-gray-800">
+                          {count}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -530,8 +710,17 @@ export default function AddContactPage() {
                             {p.formatted || p.number}
                           </span>
                         </div>
-                        {!p.valid && (
-                          <span className="text-xs bg-white px-2 py-1 rounded-full text-red-600 border border-red-200 whitespace-nowrap">
+                        {p.reason && (
+                          <span
+                            className={`text-xs bg-white px-2 py-1 rounded-full border whitespace-nowrap
+                            ${
+                              p.reason.includes("Excel")
+                                ? "text-yellow-600 border-yellow-300"
+                                : !p.valid
+                                ? "text-red-600 border-red-200"
+                                : "text-green-600 border-green-200"
+                            }`}
+                          >
                             {p.reason}
                           </span>
                         )}

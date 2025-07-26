@@ -17,10 +17,12 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<any>(null);
+  const router = useRouter();
 
   useEffect(() => {
     fetch("/api/dashboard")
@@ -35,7 +37,7 @@ export default function DashboardPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h2 className="text-2xl font-bold text-gray-800">Dashboard Overview</h2>
         <Link
-          href="/dashboard/campaigns/new"
+          href="/dashboard/campaigns/sms/new"
           className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
         >
           <Send className="w-4 h-4" /> New Campaign
@@ -191,22 +193,22 @@ export default function DashboardPage() {
             <QuickActionCard
               icon={<MessageSquare className="w-6 h-6 text-green-500" />}
               title="WhatsApp Blast"
-              action={() => console.log("WhatsApp")}
+              action={() => router.push("/dashboard/campaigns/sms/new")}
             />
             <QuickActionCard
               icon={<Smartphone className="w-6 h-6 text-blue-500" />}
               title="SMS Campaign"
-              action={() => console.log("SMS")}
+              action={() => router.push("/dashboard/campaigns/whatsapp/new")}
             />
             <QuickActionCard
               icon={<Mail className="w-6 h-6 text-red-500" />}
               title="Email Newsletter"
-              action={() => console.log("Email")}
+              action={() => router.push("/dashboard/campaigns/email/new")}
             />
             <QuickActionCard
               icon={<Send className="w-6 h-6 text-purple-500" />}
               title="Telegram Broadcast"
-              action={() => console.log("Telegram")}
+              action={() => router.push("/dashboard/campaigns/telegram/new")}
             />
           </div>
         </div>
