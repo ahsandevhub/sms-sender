@@ -8,6 +8,9 @@ const SUB_ACCOUNT = process.env.CHEAPGLOBALSMS_SUB_ACCOUNT!;
 const SUB_ACCOUNT_PASS = process.env.CHEAPGLOBALSMS_PASSWORD!;
 const SENDER_ID = process.env.CHEAPGLOBALSMS_SENDER_ID!;
 
+// Delay helper
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export async function POST(req: NextRequest) {
   try {
     await dbConnect();
@@ -26,7 +29,7 @@ export async function POST(req: NextRequest) {
       language: string;
     } = await req.json();
 
-    // Validate required fields
+    // Validate input
     if (
       !name ||
       !country ||
@@ -41,7 +44,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const sendPromises = numbers.map(async (toRaw) => {
+    // Sequential sending with delay to avoid rate-limiting
+    const results: any[] = [];
+
+    for (let i = 0; i < numbers.length; i++) {
+      const toRaw = numbers[i];
       const to = toRaw.replace(/^\+/, ""); // remove + if present
 
       const params = new URLSearchParams({
@@ -63,31 +70,30 @@ export async function POST(req: NextRequest) {
         try {
           data = JSON.parse(text);
         } catch {
-          return buildLog(toRaw, message, "failed", "Invalid JSON response");
+          results.push(
+            buildLog(toRaw, message, "failed", "Invalid JSON response")
+          );
+          continue;
         }
 
         if (data.batch_id) {
-          return buildLog(toRaw, message, "sent");
+          results.push(buildLog(toRaw, message, "sent"));
         } else {
-          return buildLog(
-            toRaw,
-            message,
-            "failed",
-            data.error || "Unknown error"
+          results.push(
+            buildLog(toRaw, message, "failed", data.error || "Unknown error")
           );
         }
       } catch (err: any) {
-        return buildLog(
-          toRaw,
-          message,
-          "failed",
-          err.message || "Network error"
+        results.push(
+          buildLog(toRaw, message, "failed", err.message || "Network error")
         );
       }
-    });
 
-    const results = await Promise.all(sendPromises);
+      // ⏳ 300ms delay between messages to prevent rate limit
+      await delay(300);
+    }
 
+    // Estimate and save campaign
     const { characters, segments, estimatedCost } = estimateCost(
       message,
       numbers.length
@@ -114,7 +120,7 @@ export async function POST(req: NextRequest) {
     );
   } catch (err: any) {
     return NextResponse.json(
-      { error: err.message, results: [] },
+      { error: err.message || "Internal Server Error", results: [] },
       { status: 500 }
     );
   }
