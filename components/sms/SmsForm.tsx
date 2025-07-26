@@ -5,7 +5,7 @@ import DynamicSMSFields from "./DynamicSMSFields";
 import FormField from "./FormField";
 import MessageStats from "./MessageStats";
 import SelectField from "./SelectField";
-import SubmitButton from "./SubmitButton";
+import { SubmitButton } from "./SubmitButton";
 import TextArea from "./TextArea";
 
 export default function SmsForm({
@@ -147,7 +147,12 @@ export default function SmsForm({
         />
       </div>
 
-      <SubmitButton sending={false} />
+      <SubmitButton
+        sending={false}
+        onStop={function (): void {
+          throw new Error("Function not implemented.");
+        }}
+      />
     </form>
   );
 }
