@@ -1,33 +1,38 @@
+import axios from "axios";
 import { NextResponse } from "next/server";
-import twilio from "twilio";
 
-const client = twilio(
-  process.env.TWILIO_ACCOUNT_SID!,
-  process.env.TWILIO_AUTH_TOKEN!
-);
-
-const allowedTemplateNames = ["test_promotion", "welcome_template"]; // You can expand this list
+const SID = process.env.TWILIO_ACCOUNT_SID!;
+const TOKEN = process.env.TWILIO_AUTH_TOKEN!;
 
 export async function GET() {
   try {
-    const templates = await client.content.v1.contents.list({ limit: 50 });
+    const res = await axios.get("https://content.twilio.com/v1/Content", {
+      auth: { username: SID, password: TOKEN },
+    });
 
-    const whatsappTemplates = templates.filter((tpl: any) =>
-      allowedTemplateNames.includes(tpl.friendlyName)
+    const allTemplates = res.data.contents || [];
+
+    const whatsappTemplates = allTemplates.filter(
+      (tpl: any) => tpl.whatsApp?.approved === true
     );
 
-    const slimTemplates = whatsappTemplates.map((tpl: any) => ({
-      sid: tpl.sid,
-      friendlyName: tpl.friendlyName,
-      language: tpl.language,
-      text: tpl.body?.text || tpl.content?.text || "No preview text available",
-    }));
+    const templates = whatsappTemplates.map((tpl: any) => {
+      const bodyComp = tpl.components?.find((c: any) => c.type === "body");
+      return {
+        sid: tpl.sid,
+        friendlyName: tpl.friendly_name,
+        language: tpl.language || "en",
+        content: {
+          text: bodyComp?.text || "No body content found",
+        },
+      };
+    });
 
-    return NextResponse.json({ templates: slimTemplates }, { status: 200 });
+    return NextResponse.json({ templates }, { status: 200 });
   } catch (error: any) {
-    console.error("❌ Failed to fetch WhatsApp templates:", error);
+    console.error("Error fetching templates from Content API v1:", error);
     return NextResponse.json(
-      { error: "Failed to fetch WhatsApp templates" },
+      { error: "Failed to fetch templates" },
       { status: 500 }
     );
   }

@@ -7,7 +7,7 @@ export interface ICampaign extends Document {
   country: string;
   provider: string;
   senderId: string;
-  language: "english" | "spanish" | "bengali" | string;
+  language: string;
   message: string;
   characters: number;
   segments: number;
@@ -37,11 +37,7 @@ const CampaignSchema: Schema = new Schema({
   country: { type: String, required: true },
   provider: { type: String, required: true },
   senderId: { type: String, required: true },
-  language: {
-    type: String,
-    enum: ["english", "spanish", "bengali"],
-    required: true,
-  },
+  language: { type: String, required: true },
   message: { type: String, required: true },
   characters: { type: Number, required: true },
   segments: { type: Number, required: true },

@@ -38,7 +38,6 @@ export default function SmsDashboard() {
   const [autoTranslate, setAutoTranslate] = useState(false);
   const [sending, setSending] = useState(false);
   const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [stopRequested, setStopRequested] = useState(false);
   const logsRef = useRef<HTMLDivElement | null>(null);
   const [autoSelectedProvider, setAutoSelectedProvider] = useState<
     Provider | ""
@@ -239,7 +238,6 @@ export default function SmsDashboard() {
 
   const handleRegularSMS = async () => {
     setLogs([]);
-    setStopRequested(false);
 
     const apiUrl = "/api/sms/" + provider;
     const res = await fetch(apiUrl, {
@@ -453,11 +451,7 @@ export default function SmsDashboard() {
 
           <SubmitButton
             sending={sending}
-            sentCount={logs.length}
-            totalCount={totalRecipients}
-            onStop={() => {
-              stopRequestedRef.current = true;
-            }}
+            onStop={() => (stopRequestedRef.current = true)}
           />
         </form>
 
@@ -726,21 +720,39 @@ const DynamicSMSFields = ({
 
 const SubmitButton = ({
   sending,
-  sentCount,
-  totalCount,
   onStop,
 }: {
   sending: boolean;
-  sentCount: number;
-  totalCount: number;
   onStop: () => void;
 }) => {
-  const progress = totalCount > 0 ? (sentCount / totalCount) * 100 : 0;
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (sending) {
+      setElapsedTime(0); // reset when sending starts
+      intervalRef.current = setInterval(() => {
+        setElapsedTime((prev) => prev + 1);
+      }, 1000);
+    } else {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    }
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [sending]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}m ${secs}s`;
+  };
 
   return (
     <div className="relative w-full space-y-2">
       <div className="flex items-center gap-2 w-full">
-        {/* Main Button with Progress */}
+        {/* Main Button */}
         <div className="relative flex-1">
           <button
             type="submit"
@@ -751,13 +763,12 @@ const SubmitButton = ({
                 : "bg-yellow-500 hover:bg-yellow-600 shadow-md hover:shadow-lg"
             }`}
           >
-            {/* Main content */}
             <span className="relative z-10 flex items-center gap-2">
               {sending ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin text-yellow-500" />
                   <span className="text-gray-700">
-                    Sending ({sentCount}/{totalCount})
+                    Sending... Please wait, don’t close it
                   </span>
                 </>
               ) : (
@@ -767,20 +778,10 @@ const SubmitButton = ({
                 </>
               )}
             </span>
-
-            {/* Progress Bar Overlay */}
-            {sending && (
-              <div className="absolute inset-0 flex bg-gray-300 rounded-lg overflow-hidden">
-                <div
-                  className="h-full bg-yellow-500 transition-all duration-300 ease-out"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            )}
           </button>
         </div>
 
-        {/* Stop Button (visible only during sending) */}
+        {/* Stop Button */}
         {sending && (
           <button
             onClick={(e) => {
@@ -805,6 +806,13 @@ const SubmitButton = ({
           </button>
         )}
       </div>
+
+      {/* Timer */}
+      {sending && (
+        <p className="text-sm text-gray-500 text-center">
+          Time elapsed: <strong>{formatTime(elapsedTime)}</strong>
+        </p>
+      )}
     </div>
   );
 };

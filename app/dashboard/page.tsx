@@ -67,6 +67,26 @@ export default function DashboardPage() {
           value={stats.pending.toLocaleString()}
           icon={<Clock className="text-yellow-500" />}
         />
+        <StatCard
+          title="Twilio Balance"
+          value={`$${stats.balances?.twilio?.toFixed(2) ?? "N/A"}`}
+          icon={<Smartphone className="text-red-500" />}
+        />
+        <StatCard
+          title="BulkSMSBD Balance"
+          value={`$${stats.balances?.bulksmsbd?.toFixed(2) ?? "N/A"}`}
+          icon={<Inbox className="text-blue-500" />}
+        />
+        <StatCard
+          title="CheapGlobalSMS Balance"
+          value={`$${stats.balances?.cheapglobalsms?.toFixed(2) ?? "N/A"}`}
+          icon={<MessageSquare className="text-purple-500" />}
+        />
+        <StatCard
+          title="Hablame Balance"
+          value={`$${stats.balances?.hablame?.toFixed(2) ?? "N/A"}`}
+          icon={<Send className="text-green-500" />}
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

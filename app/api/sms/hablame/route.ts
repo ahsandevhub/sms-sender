@@ -3,11 +3,10 @@ import { createCampaign } from "@/lib/campaigns/createCampaign";
 import { estimateCost } from "@/lib/campaigns/estimateCost";
 import { getHablameStatusReason } from "@/lib/campaigns/hablameStatus";
 import dbConnect from "@/lib/dbConnect";
-
 import { NextRequest, NextResponse } from "next/server";
 
-const API_KEY = process.env.HABLAME_API_KEY!;
 const HABLAME_API_URL = "https://www.hablame.co/api/sms/v5/send";
+const API_KEY = process.env.HABLAME_API_KEY!;
 
 export async function POST(req: NextRequest) {
   try {
@@ -28,21 +27,14 @@ export async function POST(req: NextRequest) {
     } = await req.json();
 
     if (!name || !country || !numbers?.length || !message || !language) {
-      console.error("Missing required fields for Hablame campaign:", {
-        name,
-        country,
-        numbers,
-        message,
-        language,
-      });
-
       return NextResponse.json(
         { error: "Missing required campaign fields." },
         { status: 400 }
       );
     }
 
-    const sendDate = new Date().toISOString().slice(0, 16).replace("T", " ");
+    const sendDate = "Now"; // or use ISO format if scheduled
+    const senderId = "WeMasterTrade";
 
     const sendPromises = numbers.map(async (to) => {
       const payload = {
@@ -50,7 +42,7 @@ export async function POST(req: NextRequest) {
         certificate: false,
         sendDate,
         campaignName: name,
-        from: "WeMasterTrade",
+        from: senderId,
         flash: false,
         messages: [
           {
@@ -68,9 +60,8 @@ export async function POST(req: NextRequest) {
         const response = await fetch(HABLAME_API_URL, {
           method: "POST",
           headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
             "X-Hablame-Key": API_KEY,
+            "Content-Type": "application/json",
           },
           body: JSON.stringify(payload),
         });
@@ -81,8 +72,7 @@ export async function POST(req: NextRequest) {
 
         const messageInfo = data?.payLoad?.messages?.[0];
         const statusId = messageInfo?.statusId;
-        const deliveryStatus = statusId === 100 ? "sent" : "failed";
-
+        const deliveryStatus = statusId === 1 ? "sent" : "failed";
         const reason = getHablameStatusReason(statusId);
 
         return buildLog(
@@ -108,7 +98,7 @@ export async function POST(req: NextRequest) {
       name,
       type: "sms",
       provider: "hablame",
-      senderId: "WeMasterTrade",
+      senderId,
       country,
       language,
       message,
@@ -124,9 +114,9 @@ export async function POST(req: NextRequest) {
       { status: 200 }
     );
   } catch (err: any) {
-    console.error("Hablame API Error:", err);
+    console.error("Hablame API error:", err);
     return NextResponse.json(
-      { results: [], error: err.message || "Internal Server Error" },
+      { error: err.message || "Internal Server Error", results: [] },
       { status: 500 }
     );
   }

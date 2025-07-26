@@ -1,18 +1,20 @@
-// lib/campaigns/hablameStatus.ts
-
 export function getHablameStatusReason(statusId?: number): string {
   const reasons: Record<number, string> = {
-    100: "Message sent successfully",
-    101: "Message queued for delivery",
-    102: "Message rejected — invalid number or blocked",
-    103: "Message failed — unknown error",
-    104: "Delivery error — carrier unreachable",
-    105: "Message expired — not delivered in time",
-    106: "Message rejected due to spam filters",
-    107: "Encoding issue — check special characters",
-    108: "Exceeded daily or campaign limit",
+    1: "SMS sent successfully",
+    101: "The destination number does not exist",
+    102: "Destination country is not authorized",
+    103: "Blocked due to spam",
+    104: "Insufficient balance",
+    105: "Number is on a blacklist",
+    106: "Number is on national exclusion list (RNE)",
+    107: "Recipient has opted out",
+    108: "Account blocked (fraud prevention)",
+    109: "Account blocked (policy)",
+    110: "Account locked due to wallet restrictions",
+    111: "No valid message content",
   };
 
-  if (!statusId) return "Unknown delivery status";
+  if (statusId === undefined || statusId === null)
+    return "Unknown delivery status";
   return reasons[statusId] || `Unhandled status code: ${statusId}`;
 }
