@@ -80,7 +80,9 @@ export default function SmsDashboard() {
         ? "/api/sms/twilio"
         : provider === "bulksmsbd"
         ? "/api/sms/bulksmsbd"
-        : "/api/sms/cheapglobalsms";
+        : provider === "cheapglobalsms"
+        ? "/api/sms/cheapglobalsms"
+        : "/api/sms/esms";
 
     try {
       const res = await fetch(apiRoute, {
@@ -161,6 +163,7 @@ export default function SmsDashboard() {
               </option>
               <option value="twilio">Twilio</option>
               <option value="bulksmsbd">BulkSMSBD</option>
+              <option value="esms">ESMS (Dianahost)</option>
               <option value="cheapglobalsms">CheapGlobalSMS</option>
             </select>
           </div>
