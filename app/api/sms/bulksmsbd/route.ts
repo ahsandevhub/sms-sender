@@ -1,41 +1,32 @@
 import dbConnect from "@/lib/dbConnect";
-import Campaign from "@/models/Campaign";
 import axios from "axios";
 import { NextRequest, NextResponse } from "next/server";
 
-const BULKSMSBD_API_KEY = process.env.BULKSMSBD_API_KEY!;
-const SENDER_ID = "8809617627311"; // Approved Sender ID
-const API_URL = "http://bulksmsbd.net/api/smsapi";
+import { buildLog } from "@/lib/campaigns/buildLog";
+import { createCampaign } from "@/lib/campaigns/createCampaign";
+import { estimateCost } from "@/lib/campaigns/estimateCost";
 
-const errorMap: Record<string, string> = {
-  "202": "SMS submitted successfully",
-  "1001": "Invalid number format",
-  "1002": "Sender ID is incorrect or disabled",
-  "1003": "Missing required fields. Please check your inputs.",
-  "1005": "Internal server error",
-  "1006": "Balance validity not available",
-  "1007": "Insufficient balance",
-  "1011": "User ID not found",
-  "1012": "Bengali masking required for Bangla SMS",
-  "1013": "Sender ID not linked to this API key",
-  "1014": "Sender type name not found for this API key",
-  "1015": "No valid gateway found for sender ID",
-  "1016": "Price info not found for this sender ID",
-  "1017": "Active price info not found for this sender ID",
-  "1018": "Account owner is disabled",
-  "1019": "Sender type pricing is disabled for this account",
-  "1020": "Parent account not found",
-  "1021": "Parent sender pricing not found",
-  "1031": "Account not verified. Contact administrator.",
-  "1032": "IP address not whitelisted",
-};
+const BULKSMSBD_API_KEY = process.env.BULKSMSBD_API_KEY!;
+const SENDER_ID = "WeTrainEdu";
+const API_URL = "http://bulksmsbd.net/api/smsapi";
 
 export async function POST(req: NextRequest) {
   try {
     await dbConnect();
 
-    const body = await req.json();
-    const { name, country, numbers, message, segments, estimatedCost } = body;
+    const {
+      name,
+      country,
+      numbers,
+      message,
+      language,
+    }: {
+      name: string;
+      country: string;
+      numbers: string[];
+      message: string;
+      language: string;
+    } = await req.json();
 
     if (
       !name ||
@@ -43,8 +34,7 @@ export async function POST(req: NextRequest) {
       !Array.isArray(numbers) ||
       numbers.length === 0 ||
       !message ||
-      !segments ||
-      !estimatedCost
+      !language
     ) {
       return NextResponse.json(
         { error: "Missing required campaign fields." },
@@ -52,9 +42,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const results: { to: string; status: string; error?: string }[] = [];
-
-    for (const number of numbers) {
+    const sendPromises = numbers.map(async (number) => {
       const params = new URLSearchParams({
         api_key: BULKSMSBD_API_KEY,
         type: "text",
@@ -66,56 +54,53 @@ export async function POST(req: NextRequest) {
       try {
         const response = await axios.get(`${API_URL}?${params.toString()}`);
         const statusCode = String(response.data?.response_code);
-
         const isSuccess = statusCode === "202";
 
-        results.push({
-          to: number,
-          status: isSuccess ? "sent" : "failed",
-          error: isSuccess
+        return buildLog(
+          number,
+          message,
+          isSuccess ? "sent" : "failed",
+          isSuccess
             ? undefined
-            : errorMap[statusCode] ||
-              response.data?.error_message ||
-              "Unknown error",
-        });
+            : response.data?.error_message || "Unknown error"
+        );
       } catch (err: any) {
-        results.push({
-          to: number,
-          status: "failed",
-          error: `Axios Error: ${err?.response?.data || err.message}`,
-        });
+        return buildLog(
+          number,
+          message,
+          "failed",
+          err?.message || "Axios error"
+        );
       }
-    }
-
-    const successful = results.filter((r) => r.status === "sent").length;
-    const failed = results.length - successful;
-
-    const campaign = new Campaign({
-      name,
-      country,
-      numbers,
-      message,
-      segments,
-      estimatedCost,
-      results,
-      totalSent: numbers.length,
-      successful,
-      failed,
     });
 
-    await campaign.save();
+    const results = await Promise.all(sendPromises);
+
+    const { characters, segments, estimatedCost } = estimateCost(
+      message,
+      numbers.length
+    );
+
+    const campaign = await createCampaign({
+      name,
+      type: "sms",
+      provider: "bulksmsbd",
+      senderId: SENDER_ID,
+      country,
+      language,
+      message,
+      characters,
+      segments,
+      estimatedCost,
+      numbers,
+      results,
+    });
 
     return NextResponse.json(
-      {
-        results,
-        campaignId: campaign._id,
-      },
+      { results, campaignId: campaign._id },
       { status: 200 }
     );
   } catch (err: any) {
-    return NextResponse.json(
-      { results: [], error: err.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

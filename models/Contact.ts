@@ -1,21 +1,10 @@
+import { countries } from "@/lib/countries";
 import mongoose, { Document, Schema } from "mongoose";
 
 export interface IContact extends Document {
   phone: string;
   country: string;
 }
-
-const phoneRegexByCountry: Record<string, RegExp> = {
-  Bangladesh: /^8801[3-9]\d{8}$/, // 88013xxx to 88019xxx
-  USA: /^1\d{10}$/,
-  Canada: /^1\d{10}$/,
-  India: /^91\d{10}$/,
-  Mexico: /^52\d{10}$/,
-  Colombia: /^57\d{10}$/,
-  Argentina: /^54\d{10}$/,
-  Peru: /^51\d{9}$/,
-  Singapore: /^65\d{8}$/,
-};
 
 const ContactSchema: Schema<IContact> = new Schema(
   {
@@ -28,7 +17,7 @@ const ContactSchema: Schema<IContact> = new Schema(
     country: {
       type: String,
       required: [true, "Country is required"],
-      enum: Object.keys(phoneRegexByCountry),
+      enum: Object.keys(countries),
     },
   },
   {
@@ -36,46 +25,33 @@ const ContactSchema: Schema<IContact> = new Schema(
   }
 );
 
-// Format contact before validation
+// ✅ Use the countries config directly for validation
 ContactSchema.pre<IContact>("validate", function (next) {
-  const raw = this.phone.replace(/\D/g, "");
+  const countryConfig = countries[this.country];
 
-  const expectedPrefix = {
-    Bangladesh: "880",
-    USA: "1",
-    Canada: "1",
-    India: "91",
-    Mexico: "52",
-    Colombia: "57",
-    Argentina: "54",
-    Peru: "51",
-    Singapore: "65",
-  }[this.country];
-
-  if (!expectedPrefix) {
+  if (!countryConfig) {
     return next(new Error(`Unsupported country: ${this.country}`));
   }
 
-  if (!raw.startsWith(expectedPrefix)) {
+  const rawDigits = this.phone.replace(/\D/g, "");
+
+  if (!rawDigits.startsWith(countryConfig.phonePrefix)) {
     return next(
       new Error(
-        `Phone number must start with '${expectedPrefix}' for ${this.country}`
+        `Phone number must start with '${countryConfig.phonePrefix}' for ${this.country}`
       )
     );
   }
 
-  const formatted = `+${raw}`;
-  const pattern = phoneRegexByCountry[this.country];
-
-  if (!pattern.test(raw)) {
+  if (!countryConfig.phoneRegex.test(rawDigits)) {
     return next(
       new Error(
-        `Invalid phone number format for ${this.country}. Expected pattern: ${pattern}`
+        `Invalid phone number format for ${this.country}. Example: ${countryConfig.example}`
       )
     );
   }
 
-  this.phone = formatted;
+  this.phone = `+${rawDigits}`; // ✅ Standard format
   next();
 });
 

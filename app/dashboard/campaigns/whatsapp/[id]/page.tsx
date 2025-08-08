@@ -9,9 +9,13 @@ import {
   DollarSign,
   Globe,
   Inbox,
+  Languages,
   Mail,
   MessageCircle,
+  Send,
+  Server,
   Smartphone,
+  Type,
   XCircle,
 } from "lucide-react";
 import Link from "next/link";
@@ -50,10 +54,10 @@ export default function CampaignDetails() {
 
   return (
     <div className="space-y-6">
-      {/* Header with back button */}
+      {/* Header */}
       <div className="flex items-center gap-4">
         <Link
-          href="/dashboard/campaigns"
+          href="/dashboard/campaigns/whatsapp"
           className="text-yellow-600 hover:text-yellow-800"
         >
           <ChevronLeft className="w-6 h-6" />
@@ -64,14 +68,14 @@ export default function CampaignDetails() {
         </div>
       </div>
 
-      {/* Summary Stats */}
+      {/* Stats */}
       <div className="bg-white p-6 rounded-xl shadow border border-gray-200 space-y-6">
-        {/* Primary Info */}
+        {/* General Info */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
-            title="Name"
+            title="Campaign Name"
             value={campaign.name}
-            icon={<MessageCircle className="text-yellow-500" />}
+            icon={<MessageCircle />}
           />
           <StatCard
             title="Country"
@@ -84,6 +88,30 @@ export default function CampaignDetails() {
               </span>
             }
             icon={<Globe className="text-blue-500" />}
+          />
+          <StatCard
+            title="Type"
+            value={campaign.type}
+            icon={<Type className="text-pink-500" />}
+          />
+          <StatCard
+            title="Provider"
+            value={campaign.provider}
+            icon={<Server className="text-indigo-500" />}
+          />
+        </div>
+
+        {/* Technical Info */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            title="Sender ID"
+            value={campaign.senderId || "—"}
+            icon={<Send className="text-yellow-600" />}
+          />
+          <StatCard
+            title="Language"
+            value={campaign.language || "—"}
+            icon={<Languages className="text-cyan-600" />}
           />
           <StatCard
             title="Estimated Cost"
@@ -109,7 +137,7 @@ export default function CampaignDetails() {
             value={campaign.successful}
             icon={<CheckCircle className="text-green-500" />}
             percentage={Math.round(
-              (campaign.successful / campaign.totalSent) * 100
+              (campaign.successful / Math.max(campaign.totalSent, 1)) * 100
             )}
           />
           <StatCard
@@ -117,7 +145,7 @@ export default function CampaignDetails() {
             value={campaign.failed}
             icon={<XCircle className="text-red-500" />}
             percentage={Math.round(
-              (campaign.failed / campaign.totalSent) * 100
+              (campaign.failed / Math.max(campaign.totalSent, 1)) * 100
             )}
           />
           <StatCard
@@ -134,7 +162,7 @@ export default function CampaignDetails() {
           />
         </div>
 
-        {/* Message Content */}
+        {/* Message */}
         <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
           <h3 className="text-sm font-medium text-yellow-700 mb-2">
             Message Content
@@ -150,35 +178,76 @@ export default function CampaignDetails() {
             <Smartphone className="w-5 h-5 text-yellow-500" />
             Delivery Results
           </h3>
-          <div className="space-y-3">
-            {campaign.results.map((r: any, i: number) => (
-              <div
-                key={i}
-                className={`p-4 rounded-lg ${
-                  r.status === "sent"
-                    ? "bg-green-50 border-l-4 border-green-500"
-                    : "bg-red-50 border-l-4 border-red-500"
-                }`}
-              >
-                <p className="font-medium">
-                  <span className="text-gray-700">{r.to}</span>
-                  <span
-                    className={`ml-2 px-2 py-1 text-xs rounded-full break-all ${
+          <div className="overflow-auto rounded-lg border border-gray-200">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    #
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Number
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Message Sent
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Error
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Time
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {campaign.results.map((r: any, index: number) => (
+                  <tr
+                    key={index}
+                    className={`${
                       r.status === "sent"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
+                        ? "hover:bg-green-50"
+                        : "hover:bg-red-50"
                     }`}
                   >
-                    {r.status}
-                  </span>
-                </p>
-                {r.error && (
-                  <p className="mt-1 text-sm text-red-600 break-all">
-                    {r.error}
-                  </p>
-                )}
-              </div>
-            ))}
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {index + 1}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-800">{r.to}</td>
+                    <td className="px-6 py-4 text-sm">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          r.status === "sent"
+                            ? "bg-green-200 text-green-800"
+                            : "bg-red-200 text-red-800"
+                        }`}
+                      >
+                        {r.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-700 whitespace-pre-wrap max-w-md">
+                      {r.message || "—"}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-red-600 break-all">
+                      {r.error || "—"}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {r.timestamp
+                        ? new Date(r.timestamp).toLocaleString("en-US", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

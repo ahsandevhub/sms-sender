@@ -10,11 +10,15 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
     const country = searchParams.get("country");
+    const type = searchParams.get("type");
+    const language = searchParams.get("language");
     const from = searchParams.get("from");
     const to = searchParams.get("to");
 
     const filter: any = {};
     if (country) filter.country = country;
+    if (type) filter.type = type;
+    if (language) filter.language = language;
     if (from || to) filter.createdAt = {};
     if (from) filter.createdAt.$gte = new Date(from);
     if (to) filter.createdAt.$lte = new Date(to);

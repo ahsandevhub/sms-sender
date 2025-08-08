@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "apis": [
+    {
+      "identifier": "hablame-keiv",
+      "source": "@hablame-keiv/v5.0#ca8bfom86ik5q6",
+      "integrity": "sha512-17vcuR9Q1B7K+eP1cL7kLyT85VgKCroGS0qsgfufc6yVzIdek6xw2yTgwm0XET/gPYN380H00OqSoSf9//G+TQ==",
+      "installerVersion": "6.1.3"
+    }
+  ]
+}
