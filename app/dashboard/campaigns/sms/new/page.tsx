@@ -333,6 +333,7 @@ export default function SmsDashboard() {
               { value: "bulksmsbd", label: "BulkSMSBD" },
               { value: "cheapglobalsms", label: "CheapGlobalSMS" },
               { value: "hablame", label: "Hablame" },
+              { value: "esms", label: "ESMS (Dianahost)" },
             ]}
             required
           />

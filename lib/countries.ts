@@ -134,6 +134,41 @@ export const countries: Record<string, CountryConfig> = {
     recommended: "twilio",
     language: "es", // Spanish
   },
+
+  // 🌐 New entries
+  "United States": {
+    name: "United States",
+    code: "US",
+    flag: "🇺🇸",
+    phoneRegex: /^1\d{10}$/,
+    phonePrefix: "1",
+    example: "12065551234",
+    smsRate: { twilio: 0.04 },
+    recommended: "twilio",
+    language: "en", // English
+  },
+  India: {
+    name: "India",
+    code: "IN",
+    flag: "🇮🇳",
+    phoneRegex: /^91\d{10}$/,
+    phonePrefix: "91",
+    example: "919876543210",
+    smsRate: { cheapglobalsms: 0.004 },
+    recommended: "cheapglobalsms",
+    language: "hi", // Hindi (official), also en
+  },
+  "United Kingdom": {
+    name: "United Kingdom",
+    code: "GB",
+    flag: "🇬🇧",
+    phoneRegex: /^44\d{10}$/,
+    phonePrefix: "44",
+    example: "447912345678",
+    smsRate: { twilio: 0.04 },
+    recommended: "twilio",
+    language: "en", // English
+  },
 };
 
 export const getCountryFlag = (country: string): string =>
