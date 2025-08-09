@@ -26,7 +26,7 @@ type LogEntry = {
 export default function SmsDashboard() {
   const stopRequestedRef = useRef(false);
   const [provider, setProvider] = useState<Provider | "">("");
-  const [name, setName] = useState("");
+  const [name, setName] = useState("OFF ");
   const [country, setCountry] = useState("");
   const [numbers, setNumbers] = useState("");
   const [message, setMessage] = useState("");

@@ -33,10 +33,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const sendDate = "Now"; // or use ISO format if scheduled
+    const sendDate = "Now"; // or ISO format if scheduled
     const senderId = "WeMasterTrade";
 
-    const sendPromises = numbers.map(async (to) => {
+    const sendPromises = numbers.map(async (rawNumber) => {
+      // Remove "+" and all non-digit characters
+      const to = String(rawNumber).replace(/[^\d]/g, "");
+
       const payload = {
         priority: true,
         certificate: false,
